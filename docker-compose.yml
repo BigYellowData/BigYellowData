@@ -1,142 +1,60 @@
 services:
-  # Hadoop NameNode (HDFS Master)
-  namenode:
-    image: openeuler/hadoop:3.4.1-oe2403sp1
-    container_name: namenode
-    hostname: namenode
-    environment:
-      - CLUSTER_NAME=spark-hadoop-cluster
-    ports:
-      - "9870:9870"  # NameNode Web UI
-      - "9000:9000"  # HDFS port
-    volumes:
-      - namenode-data:/hadoop/dfs/name
-      - ./hadoop-config:/opt/hadoop/etc/hadoop:ro
-    command: ["hdfs", "namenode"]
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-    networks:
-      - spark-network
-
-  # Hadoop DataNode (HDFS Worker)
-  datanode:
-    image: openeuler/hadoop:3.4.1-oe2403sp1
-    hostname: datanode
-    environment:
-      - CLUSTER_NAME=spark-hadoop-cluster
-    ports:
-      - "9864:9864"  # DataNode Web UI
-    volumes:
-      - datanode-data:/hadoop/dfs/data
-      - ./hadoop-config:/opt/hadoop/etc/hadoop:ro
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-    depends_on:
-      - namenode
-    command: ["hdfs", "datanode"]
-    networks:
-      - spark-network
-
-  # YARN ResourceManager
-  resourcemanager:
-    image: openeuler/hadoop:3.4.1-oe2403sp1
-    container_name: resourcemanager
-    hostname: resourcemanager
-    environment:
-      - CLUSTER_NAME=spark-hadoop-cluster
-    ports:
-      - "8088:8088"  # ResourceManager Web UI
-      - "8030:8030"
-      - "8031:8031"
-      - "8032:8032"
-    volumes:
-      - ./hadoop-config:/opt/hadoop/etc/hadoop:ro
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-    depends_on:
-      - namenode
-    command: ["yarn", "resourcemanager"]
-    networks:
-      - spark-network
-
-  # YARN NodeManager
-  nodemanager:
-    image: openeuler/hadoop:3.4.1-oe2403sp1
-    hostname: nodemanager
-    environment:
-      - CLUSTER_NAME=spark-hadoop-cluster
-    ports:
-      - "8042:8042"  # NodeManager Web UI
-    volumes:
-      - ./hadoop-config:/opt/hadoop/etc/hadoop:ro
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-    depends_on:
-      - resourcemanager
-    command: ["yarn", "nodemanager"]
-    networks:
-      - spark-network
-
-  # Spark Master (configured for YARN and HDFS)
   spark-master:
-    image: apache/spark:4.0.1-scala2.13-java21-python3-ubuntu
+    build: ./docker
     container_name: spark-master
-    hostname: spark-master
     environment:
       - SPARK_MODE=master
-      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
-      - YARN_CONF_DIR=/opt/hadoop/etc/hadoop
-      - SPARK_MASTER_HOST=spark-master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_MASTER_URL=spark://spark-master:7077
     ports:
-      - "9090:8080"  # Spark Master Web UI
-      - "7077:7077"  # Spark Master port
-      - "4040:4040"  # Spark Application UI
-    volumes:
-      - spark-master-data:/opt/spark/work-dir
-      - ./hadoop-config:/opt/hadoop/etc/hadoop:ro
-    command: >
-      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
-      --host spark-master --port 7077 --webui-port 8080
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-    depends_on:
-      - namenode
-      - resourcemanager
+      - "8081:8080" # Web UI
+      - "7077:7077" # Spark master port
     networks:
       - spark-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
-  # Spark Worker
-  spark-worker:
-    image: apache/spark:4.0.1-scala2.13-java21-python3-ubuntu
-    hostname: spark-worker
+  spark-worker-1:
+    build: ./docker
+    container_name: spark-worker-1
+    depends_on:
+      - spark-master
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_MEMORY=2G
       - SPARK_WORKER_CORES=2
-      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
-      - YARN_CONF_DIR=/opt/hadoop/etc/hadoop
-    ports:
-      - "9091:8081"  # Spark Worker Web UI
-    volumes:
-      - spark-worker-data:/opt/spark/work-dir
-      - ./hadoop-config:/opt/hadoop/etc/hadoop:ro
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - spark-network
+
+  spark-worker-2:
+    build: ./docker
+    container_name: spark-worker-2
     depends_on:
       - spark-master
-      - nodemanager
-    command: >
-      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-      spark://spark-master:7077 --webui-port 8081
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     deploy:
       resources:
         limits:
@@ -150,53 +68,17 @@ services:
     container_name: minio
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     ports:
-      - '9002:9000'  # Changed from 9000 to avoid HDFS conflict
+      - '9000:9000'  # Changed from 9000 to avoid HDFS conflict
       - '9001:9001'
-    volumes:
-      - minio-data:/data
+    #   volumes:
+    #     - ./minio-data:/data
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
     command: server /data --console-address ":9001"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
     networks:
       - spark-network
 
 networks:
   spark-network:
     driver: bridge
-
-volumes:
-  namenode-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind,size=20G
-      device: ./hadoop/namenode
-  datanode-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind,size=50G
-      device: ./hadoop/datanode
-  spark-master-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind,size=10G
-      device: ./spark/master
-  spark-worker-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind,size=20G
-      device: ./spark/worker
-  minio-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind,size=30G
-      device: ./minio-data
