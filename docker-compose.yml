@@ -14,7 +14,7 @@ services:
       - MINIO_ENDPOINT=${MINIO_ENDPOINT}
     ports:
       - "8081:8080" # Web UI
-      - "7077:7077" # Spark master port7
+      - "7077:7077" # Spark master port
     volumes:
       - ./data:/data
     networks:
@@ -43,7 +43,6 @@ services:
       resources:
         limits:
           memory: 2G
-    ##Added volumes so the data are accessible dor Spark
     volumes:
       - ./data:/data
     networks:
@@ -78,7 +77,7 @@ services:
     container_name: minio
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     ports:
-      - '9000:9000'  # Changed from 9000 to avoid HDFS conflict
+      - '9000:9000'
       - '9001:9001'
     volumes:
       - ./minio-data:/data
@@ -88,6 +87,54 @@ services:
     command: server /data --console-address ":9001"
     networks:
       - spark-network
+
+  # PostgreSQL (Data Warehouse)
+  postgres-dw:
+    image: postgres:15
+    container_name: postgres-dw
+    hostname: postgres-dw
+    environment:
+      POSTGRES_USER: user_dw
+      POSTGRES_PASSWORD: password_dw
+      POSTGRES_DB: nyc_data_warehouse
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      # Initialisation automatique
+      - ./creation.sql:/docker-entrypoint-initdb.d/1-creation.sql
+      - ./insertion.sql:/docker-entrypoint-initdb.d/2-insertion.sql
+    networks:
+      - spark-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_dw -d nyc_data_warehouse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Interface graphique pour PostgreSQL (pgAdmin)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
+    ports:
+      - "5050:80"
+    networks:
+      - spark-network
+
+  dashboard:
+    build: ./ex04_dashboard/dashboard
+    container_name: dashboard_nyc
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./ex04_dashboard/dashboard:/app
+    networks:
+      - spark-network
+    depends_on:
+      - postgres-dw
 
 networks:
   spark-network:
