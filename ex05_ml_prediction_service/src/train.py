@@ -1,13 +1,13 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
-from data_loader import load_and_split_data, prepare_data
+from data_manager import load_and_split_data, prepare_data
 import joblib
 
 def main():
     print("Loading and preparing data...")
     data_path = "../data/processed"
-    train_raw, test_raw = load_and_split_data(data_path)
+    train_raw, test_raw = load_data(data_path)
     X, y = prepare_data(train_raw)
     X_test, y_test = prepare_data(test_raw)
 
