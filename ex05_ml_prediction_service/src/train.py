@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
-from data_manager import load_and_split_data, prepare_data
+from data_manager import load_data, prepare_data
 import joblib
 
 def main():
@@ -19,9 +19,11 @@ def main():
     predictions = model.predict(X_test)
     rmse = mean_squared_error(y_test, predictions, squared=False)
     print(f"RMSE on test set : {rmse:.2f}")
-
-    print("Saving model...")
-    joblib.dump(model, "models/taxi_price_model.joblib")
+    if (rmse>10):
+        print(f"Model not performing enough to save it")
+    else:
+        print("Saving model...")
+        joblib.dump(model, "models/taxi_price_model.joblib")
 
 if __name__ == "__main__":
     main()

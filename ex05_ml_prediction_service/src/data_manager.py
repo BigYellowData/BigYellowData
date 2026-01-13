@@ -42,10 +42,19 @@ def download_from_minio(dest_folder: str):
     print("Done.")
 
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
+    required_cols = ['trip_distance', 'PULocationID', 'DOLocationID', 'tpep_pickup_datetime', 'total_amount']
+    for col in required_cols:
+        if col not in df.columns:
+            raise KeyError(f"Missing required column {col}")
+
+    if (df['trip_distance'] < 0).any() or (df['total_amount'] < 0).any():
+        raise ValueError(f"Error: negative value detected")
+
     if df['tpep_pickup_datetime'].dtype == 'object':
         df['tpep_pickup_datetime'] = pd.to_datetime(df['tpep_pickup_datetime'])
     df['pickup_hour'] = df['tpep_pickup_datetime'].dt.hour
     df['day_of_week'] = df['tpep_pickup_datetime'].dt.dayofweek
+
     features = ['trip_distance', 'PULocationID', 'DOLocationID', 'pickup_hour', 'day_of_week']
     target = 'total_amount'
 
@@ -69,3 +78,9 @@ def load_data(filepath: str, test_rate=0.2) -> pd.DataFrame:
     except Exception as e:
         print(f"Error while reading parquet files : {e}")
         sys.exit(1)
+
+if __name__ == "__main__":
+    features = ['trip_distance', 'PULocationID', 'DOLocationID', 'pickup_hour', 'day_of_week', 'total_amount']
+    target = features.pop()
+    print(target)
+    print(features)
