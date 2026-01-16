@@ -124,6 +124,7 @@ services:
     networks:
       - spark-network
 
+  # Dashboard Streamlit (Ex04)
   dashboard:
     build: ./ex04_dashboard/dashboard
     container_name: dashboard_nyc
@@ -134,7 +135,9 @@ services:
     networks:
       - spark-network
     depends_on:
-      - postgres-dw
+      postgres-dw:
+        condition: service_healthy
+    restart: unless-stopped
 
 networks:
   spark-network:

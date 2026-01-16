@@ -39,29 +39,62 @@ INSERT INTO dim_payment_type (payment_type_id, description) VALUES
 
 ON CONFLICT (payment_type_id) DO NOTHING;
 
--- 4) dim_date (On génère par exemple 5 ans de dates)
--- Astuce SQL pour générer un calendrier sans le taper à la main
--- 4) dim_date (On étend à 10 ans pour couvrir jusqu'à 2030)
-INSERT INTO dim_date
-SELECT
-    TO_CHAR(datum, 'yyyymmdd')::INT AS date_id,
-    datum AS full_date,
-    EXTRACT(YEAR FROM datum) AS year,
-    EXTRACT(MONTH FROM datum) AS month,
-    EXTRACT(DAY FROM datum) AS day,
-    EXTRACT(ISODOW FROM datum) AS day_of_week,
-    TO_CHAR(datum, 'Day') AS day_name,
-    TO_CHAR(datum, 'Month') AS month_name,
-    CASE WHEN EXTRACT(ISODOW FROM datum) IN (6, 7) THEN TRUE ELSE FALSE END AS is_weekend
-FROM (SELECT '2020-01-01'::DATE + SEQUENCE.DAY AS datum
-      FROM GENERATE_SERIES(0, 365*10) AS SEQUENCE(DAY)) DQ -- <--- MODIFICATION ICI (365*10)
-ORDER BY 1
-ON CONFLICT (date_id) DO NOTHING;
+-- 4) dim_date - Sera générée automatiquement après chargement de fact_trip
+-- (voir populate_dim_date.sql qui extrait les dates réelles des données)
 
 -- 5) dim_location
--- ATTENTION : Normalement, ceci vient du fichier taxi_zone_lookup.csv.
--- Pour l'exercice SQL, tu peux soit utiliser la commande COPY si le fichier est dans le conteneur,
--- soit insérer quelques valeurs fictives pour tester, soit charger le CSV via Python/Spark.
--- Voici la commande idéale si tu copies le csv dans le conteneur Docker :
--- COPY dim_location(location_id, borough, zone, service_zone)
--- FROM '/taxi_zone_lookup.csv' DELIMITER ',' CSV HEADER;
+-- Le fichier taxi_zone_lookup.csv doit être copié dans /tmp/ du conteneur PostgreSQL
+-- avant d'exécuter ce script (voir run_spark_docker.sh)
+COPY dim_location(location_id, borough, zone, service_zone)
+FROM '/tmp/taxi_zone_lookup.csv' DELIMITER ',' CSV HEADER;
+
+-- ============================================================================
+--  6) Vérification des dimensions chargées
+-- ============================================================================
+
+DO $$
+DECLARE
+    v_vendor_count INTEGER;
+    v_ratecode_count INTEGER;
+    v_payment_count INTEGER;
+    v_date_count INTEGER;
+    v_location_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO v_vendor_count FROM dim_vendor;
+    SELECT COUNT(*) INTO v_ratecode_count FROM dim_ratecode;
+    SELECT COUNT(*) INTO v_payment_count FROM dim_payment_type;
+    SELECT COUNT(*) INTO v_date_count FROM dim_date;  -- Sera 0 ici, rempli après fact_trip
+    SELECT COUNT(*) INTO v_location_count FROM dim_location;
+
+    RAISE NOTICE '========================================';
+    RAISE NOTICE 'Dimensions Reference Data - Summary';
+    RAISE NOTICE '========================================';
+    RAISE NOTICE 'dim_vendor:       % rows', v_vendor_count;
+    RAISE NOTICE 'dim_ratecode:     % rows', v_ratecode_count;
+    RAISE NOTICE 'dim_payment_type: % rows', v_payment_count;
+    RAISE NOTICE 'dim_date:         % rows', v_date_count;
+    RAISE NOTICE 'dim_location:     % rows', v_location_count;
+    RAISE NOTICE '========================================';
+
+    -- Assertions pour garantir l'intégrité
+    IF v_vendor_count < 2 THEN
+        RAISE EXCEPTION 'Insufficient vendors loaded (expected >= 2, got %)', v_vendor_count;
+    END IF;
+
+    IF v_ratecode_count < 6 THEN
+        RAISE EXCEPTION 'Insufficient ratecodes loaded (expected >= 6, got %)', v_ratecode_count;
+    END IF;
+
+    IF v_payment_count < 6 THEN
+        RAISE EXCEPTION 'Insufficient payment types loaded (expected >= 6, got %)', v_payment_count;
+    END IF;
+
+    -- dim_date sera remplie après fact_trip, pas de vérification ici
+    IF v_date_count > 0 THEN
+        RAISE NOTICE 'dim_date already has % rows', v_date_count;
+    END IF;
+
+    IF v_location_count < 260 THEN
+        RAISE WARNING 'Location count seems low (expected ~265, got %). Check taxi_zone_lookup.csv', v_location_count;
+    END IF;
+END $$;
