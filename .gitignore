@@ -57,3 +57,5 @@ hadoop
 env
 .env
 /.idea/
+
+postgres-data/

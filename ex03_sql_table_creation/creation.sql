@@ -73,7 +73,7 @@ CREATE TABLE fact_trip (
                            trip_id              BIGSERIAL PRIMARY KEY,
 
     -- Clés étrangères vers les dimensions
-                           date_id              INTEGER NOT NULL REFERENCES dim_date(date_id),
+                           date_id              INTEGER NOT NULL,  -- FK ajoutée après insertion de dim_date
                            vendor_id            INTEGER NOT NULL REFERENCES dim_vendor(vendor_id),
                            ratecode_id          INTEGER REFERENCES dim_ratecode(ratecode_id),
                            payment_type_id      INTEGER REFERENCES dim_payment_type(payment_type_id),
