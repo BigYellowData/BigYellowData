@@ -1,11 +1,11 @@
 import joblib
 import pandas as pd
 import os
-import sys
 from data_manager import prepare_data
 
 MODEL_NAME = "taxi_price_model"
 MODEL_LOAD_PATH = f"models/{MODEL_NAME}.joblib"
+
 
 def load_model(path: str = MODEL_LOAD_PATH):
     """
@@ -20,7 +20,7 @@ def load_model(path: str = MODEL_LOAD_PATH):
     Returns
     -------
     object
-        The loaded Scikit-Learn model or Pipeline object ready for prediction.
+        The loaded Scikit-Learn model ready for prediction.
 
     Raises
     ------
@@ -32,9 +32,11 @@ def load_model(path: str = MODEL_LOAD_PATH):
     print("Loading model...")
     return joblib.load(path)
 
+
 def predict_trip_price(model, trip_data: pd.DataFrame) -> float:
     """
     Generate a price prediction for a given trip.
+
     This function acts as a wrapper around the model's predict method.
     It handles the necessary data formatting to match the training schema.
 
@@ -49,7 +51,8 @@ def predict_trip_price(model, trip_data: pd.DataFrame) -> float:
     model : object
         The trained model object (must have a .predict() method).
     trip_data : pd.DataFrame
-        Raw input data containing trip features (trip_distance, PULocationID, etc.).
+        Raw input data containing trip features (trip_distance,
+        PULocationID, etc.).
 
     Returns
     -------

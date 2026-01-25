@@ -2,10 +2,12 @@ import pytest
 import pandas as pd
 from src.data_manager import prepare_data
 
+
 @pytest.fixture
 def valid_data():
     """
     Fixture providing a valid sample DataFrame for testing.
+
     This DataFrame contains all required columns with valid data types
     and realistic values, serving as a baseline for positive tests.
 
@@ -19,12 +21,18 @@ def valid_data():
         'PULocationID': [100, 101, 102],
         'DOLocationID': [200, 201, 202],
         'total_amount': [15.0, 30.5, 10.0],
-        'tpep_pickup_datetime': pd.to_datetime(['2024-01-01 10:00', '2024-01-01 11:00', '2024-01-01 12:00'])
+        'tpep_pickup_datetime': pd.to_datetime([
+            '2024-01-01 10:00',
+            '2024-01-01 11:00',
+            '2024-01-01 12:00'
+        ])
     })
+
 
 def test_prepare_data_output_shape(valid_data: pd.DataFrame):
     """
     Verify that the data preparation returns correctly shaped X and y.
+
     Scenario:
         Input is a perfectly valid DataFrame.
     Expected Result:
@@ -42,6 +50,7 @@ def test_prepare_data_output_shape(valid_data: pd.DataFrame):
     assert len(X) == len(y)
     assert y.equals(valid_data['total_amount'])
 
+
 @pytest.mark.parametrize("missing_col", [
     'trip_distance',
     'PULocationID',
@@ -52,6 +61,7 @@ def test_prepare_data_output_shape(valid_data: pd.DataFrame):
 def test_missing_required_columns(valid_data: pd.DataFrame, missing_col: str):
     """
     Verify schema validation for missing columns.
+
     This test iterates over each required column and removes it
     to ensure the function raises a KeyError.
 
@@ -67,13 +77,16 @@ def test_missing_required_columns(valid_data: pd.DataFrame, missing_col: str):
     with pytest.raises(KeyError):
         prepare_data(broken_df)
 
+
 def test_negative_value_handling(valid_data: pd.DataFrame):
     """
     Verify business logic validation for negative values.
+
     Scenario:
         Input contains negative distance or negative price.
     Expected Result:
-        The function should raise a ValueError to prevent training on corrupted data.
+        The function should raise a ValueError to prevent training
+        on corrupted data.
 
     Parameters
     ----------
@@ -85,6 +98,7 @@ def test_negative_value_handling(valid_data: pd.DataFrame):
     bad_distance.loc[0, 'trip_distance'] = -1.0
     with pytest.raises(ValueError):
         prepare_data(bad_distance)
+
     # Case 2: Negative Price
     bad_price = valid_data.copy()
     bad_price.loc[0, 'total_amount'] = -1.0

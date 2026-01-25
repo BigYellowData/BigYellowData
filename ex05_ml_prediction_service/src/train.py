@@ -1,3 +1,4 @@
+import sys
 from data_manager import load_data, prepare_data
 from model_manager import train_model, test_model, save_model
 
@@ -8,7 +9,8 @@ if __name__ == "__main__":
         train_raw, test_raw = load_data(data_path)
     except Exception as e:
         print(f"Error loading data: {e}")
-        return
+        # F706: Replaced 'return' with sys.exit(1) to stop execution properly
+        sys.exit(1)
 
     print("Preparing data...")
     try:
@@ -16,7 +18,7 @@ if __name__ == "__main__":
         X_test, y_test = prepare_data(test_raw)
     except Exception as e:
         print(f"Error preparing data: {e}")
-        return
+        sys.exit(1)
 
     model = train_model(X_train, y_train)
     rmse = test_model(model, X_test, y_test)

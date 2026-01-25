@@ -2,8 +2,7 @@ import pytest
 import pandas as pd
 from src.model_manager import train_model
 from src.data_manager import prepare_data
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
+
 
 @pytest.fixture
 def train_sample():
@@ -22,12 +21,18 @@ def train_sample():
         'PULocationID': [100, 101, 102],
         'DOLocationID': [200, 201, 202],
         'total_amount': [15.0, 30.5, 10.0],
-        'tpep_pickup_datetime': pd.to_datetime(['2024-01-01 10:00', '2024-01-01 11:00', '2024-01-01 12:00'])
+        'tpep_pickup_datetime': pd.to_datetime([
+            '2024-01-01 10:00',
+            '2024-01-01 11:00',
+            '2024-01-01 12:00'
+        ])
     })
+
 
 def test_coefficient(train_sample: pd.DataFrame):
     """
     Verify the Business Logic.
+
     This test inspects the internal weights of the linear model to ensure
     it learns that distance is positively correlated with price.
 
@@ -42,7 +47,10 @@ def test_coefficient(train_sample: pd.DataFrame):
     # We check the coefficient of the first feature (trip_distance)
     distance_coef = model.coef_[0]
 
-    assert distance_coef > 0, "ERROR: trip_distance has to increase total_amount"
+    assert distance_coef > 0, (
+        "ERROR: trip_distance has to increase total_amount"
+    )
+
 
 def test_learn(train_sample: pd.DataFrame):
     """
@@ -63,4 +71,6 @@ def test_learn(train_sample: pd.DataFrame):
     predictions = model.predict(X_train)
     mean_error = (predictions - y_train).mean()
 
-    assert abs(mean_error) < 1e-4, "ERROR: biased model can not learn (Mean Residuals != 0)"
+    assert abs(mean_error) < 1e-4, (
+        "ERROR: biased model can not learn (Mean Residuals != 0)"
+    )

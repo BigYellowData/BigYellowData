@@ -1,4 +1,3 @@
-import pandas as pd
 import os
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
@@ -7,9 +6,11 @@ import joblib
 MODEL_NAME = "taxi_price_model"
 MODEL_SAVE_PATH = f"models/{MODEL_NAME}.joblib"
 
+
 def train_model(X_train, y_train, model=None):
     """
     Train the machine learning model.
+
     If no model is provided, it defaults to a standard Linear Regression.
 
     Parameters
@@ -33,6 +34,7 @@ def train_model(X_train, y_train, model=None):
     model.fit(X_train, y_train)
 
     return model
+
 
 def test_model(model, X_test, y_test):
     """
@@ -58,9 +60,11 @@ def test_model(model, X_test, y_test):
 
     return rmse
 
+
 def save_model(model, rmse):
     """
     Persist the model to disk if performance is acceptable.
+
     This function acts as a 'Quality Gate'. The model is saved ONLY if
     the RMSE is strictly lower than 10.0.
 
@@ -74,6 +78,12 @@ def save_model(model, rmse):
     if rmse < 10:
         os.makedirs("models", exist_ok=True)
         joblib.dump(model, MODEL_SAVE_PATH)
-        print(f"Model saved to {MODEL_SAVE_PATH}, meets performance criteria (RMSE {rmse:.2f} < 10)")
+        print(
+            f"Model saved to {MODEL_SAVE_PATH}, "
+            f"meets performance criteria (RMSE {rmse:.2f} < 10)"
+        )
     else:
-        print(f"Model not saved because performance is too low (RMSE {rmse:.2f} >= 10)")
+        print(
+            f"Model not saved because performance is too low "
+            f"(RMSE {rmse:.2f} >= 10)"
+        )
