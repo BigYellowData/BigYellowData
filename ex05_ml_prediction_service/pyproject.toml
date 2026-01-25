@@ -17,5 +17,11 @@ dependencies = [
 [dependency-groups]
 dev = [
     "flake8>=5.0.4",
+    "pyment>=0.3.3",
     "pytest>=8.3.5",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    ".", "src"
 ]

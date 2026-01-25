@@ -1,13 +1,7 @@
-import pandas as pd
-import os
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
 from data_manager import load_data, prepare_data
-import joblib
+from model_manager import train_model, test_model, save_model
 
-MODEL_NAME = "taxi_price_model"
-
-def main():
+if __name__ == "__main__":
     print("Loading data...")
     try:
         data_path = "../data/processed"
@@ -24,23 +18,6 @@ def main():
         print(f"Error preparing data: {e}")
         return
 
-    print(f"Training model on {len(X_train)} rows...")
-    model = LinearRegression()
-    model.fit(X_train,y_train)
-
-    print("Evaluating model...")
-    predictions = model.predict(X_test)
-    rmse = mean_squared_error(y_test, predictions, squared=False)
-
-    print(f"RMSE on test set : {rmse:.2f}")
-    if (rmse<10):
-        print("Success! Model meets performance criteria (RMSE < 10)")
-        os.makedirs("models", exist_ok=True)
-        model_path = f"models/{MODEL_NAME}.joblib"
-        joblib.dump(model, model_path)
-        print(f"Model saved to {model_path}")
-    else:
-        print(f"Model not saved because performance is too low (RMSE {rmse:.2f} >= 10)")
-
-if __name__ == "__main__":
-    main()
+    model = train_model(X_train, y_train)
+    rmse = test_model(model, X_test, y_test)
+    save_model(model, rmse)
