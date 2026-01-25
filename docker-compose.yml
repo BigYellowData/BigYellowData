@@ -9,9 +9,14 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
       - SPARK_MASTER_URL=spark://spark-master:7077
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
     ports:
       - "8081:8080" # Web UI
-      - "7077:7077" # Spark master port
+      - "7077:7077" # Spark master port7
+    volumes:
+      - ./data:/data
     networks:
       - spark-network
     healthcheck:
@@ -38,6 +43,9 @@ services:
       resources:
         limits:
           memory: 2G
+    ##Added volumes so the data are accessible dor Spark
+    volumes:
+      - ./data:/data
     networks:
       - spark-network
 
@@ -59,6 +67,8 @@ services:
       resources:
         limits:
           memory: 2G
+    volumes:
+      - ./data:/data
     networks:
       - spark-network
 
@@ -70,11 +80,11 @@ services:
     ports:
       - '9000:9000'  # Changed from 9000 to avoid HDFS conflict
       - '9001:9001'
-    #   volumes:
-    #     - ./minio-data:/data
+    volumes:
+      - ./minio-data:/data
     environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
     networks:
       - spark-network

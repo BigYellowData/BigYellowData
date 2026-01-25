@@ -51,3 +51,9 @@ minio-data
 
 ### Hadoop ###
 hadoop
+
+### Env ###
+.env
+env
+.env
+/.idea/
