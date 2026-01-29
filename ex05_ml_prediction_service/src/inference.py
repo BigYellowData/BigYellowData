@@ -1,7 +1,7 @@
+import os
 import joblib
 import pandas as pd
-import os
-from data_manager import prepare_data
+from data_manager import prepare_data_inference
 
 MODEL_NAME = "taxi_price_model"
 MODEL_LOAD_PATH = f"models/{MODEL_NAME}.joblib"
@@ -20,7 +20,7 @@ def load_model(path: str = MODEL_LOAD_PATH):
     Returns
     -------
     object
-        The loaded Scikit-Learn model ready for prediction.
+        The loaded model ready for prediction.
 
     Raises
     ------
@@ -28,8 +28,8 @@ def load_model(path: str = MODEL_LOAD_PATH):
         If the model file does not exist at the specified path.
     """
     if not os.path.exists(path):
-        raise FileNotFoundError(f"Error model not found at {path}")
-    print("Loading model...")
+        raise FileNotFoundError(f"Error: model not found at {path}")
+    print(f"Loading model from {path}...")
     return joblib.load(path)
 
 
@@ -38,13 +38,8 @@ def predict_trip_price(model, trip_data: pd.DataFrame) -> float:
     Generate a price prediction for a given trip.
 
     This function acts as a wrapper around the model's predict method.
-    It handles the necessary data formatting to match the training schema.
-
-    Note
-    ----
-    This function injects a dummy 'total_amount' column set to 0.
-    This is required because the shared `prepare_data` function expects
-    this column to exist, even though it is not used for inference.
+    It handles the necessary data formatting using the inference
+    preparation pipeline.
 
     Parameters
     ----------
@@ -57,22 +52,22 @@ def predict_trip_price(model, trip_data: pd.DataFrame) -> float:
     Returns
     -------
     float
-        The predicted price of the trip.
+        The predicted price of the trip. If multiple rows are provided,
+        returns the prediction for the first row only.
 
     Raises
     ------
     ValueError
-        If data preparation fails (e.g. missing columns in input).
+        If data preparation fails.
     """
     trip_data = trip_data.copy()
-    # Injection of dummy target to satisfy prepare_data requirements
-    trip_data['total_amount'] = 0
 
     try:
-        X, _ = prepare_data(trip_data)
+        X = prepare_data_inference(trip_data)
     except Exception as e:
         raise ValueError(f"Data Preparation Failed: {e}")
 
+    # Takes the first prediction from the result array
     price = model.predict(X)[0]
 
-    return price
+    return float(price)

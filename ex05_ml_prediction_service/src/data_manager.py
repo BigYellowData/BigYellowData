@@ -1,6 +1,7 @@
 import pandas as pd
 import sys
 import shutil
+from model_manager import REQUIRED_COLUMNS, TARGET_COLUMN
 from pathlib import Path
 from minio import Minio
 from sklearn.model_selection import train_test_split
@@ -75,70 +76,6 @@ def download_from_minio(dest_folder: str):
     print("Done.")
 
 
-def prepare_data(df: pd.DataFrame):
-    """
-    Feature engineering and data cleaning pipeline.
-
-    It performs the following steps:
-    1. Validates existence of required columns.
-    2. Checks for data anomalies (negative values).
-    3. Extracts time-based features (hour, day of week).
-    4. Separates features (X) from the target (y).
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The raw input dataframe containing trip information.
-
-    Returns
-    -------
-    tuple of (pd.DataFrame, pd.Series)
-        - X (DataFrame): The feature matrix (distance, locations, time).
-        - y (Series): The target variable (total_amount).
-
-    Raises
-    ------
-    KeyError
-        If a required column is missing from the input dataframe.
-    ValueError
-        If negative values are detected in distance or amount.
-    """
-    # TODO: One-Hot-Encode location IDs or use a boolean 'to_airport'
-    required_cols = [
-        'trip_distance',
-        'PULocationID',
-        'DOLocationID',
-        'tpep_pickup_datetime',
-        'total_amount'
-    ]
-    for col in required_cols:
-        if col not in df.columns:
-            raise KeyError(f"Missing required column {col}")
-
-    if (df['trip_distance'] < 0).any() or (df['total_amount'] < 0).any():
-        # F541: Removed 'f' because no variables are inside the string
-        raise ValueError("Error: negative value detected")
-
-    if df['tpep_pickup_datetime'].dtype == 'object':
-        df['tpep_pickup_datetime'] = pd.to_datetime(
-            df['tpep_pickup_datetime']
-        )
-
-    df['pickup_hour'] = df['tpep_pickup_datetime'].dt.hour
-    df['day_of_week'] = df['tpep_pickup_datetime'].dt.dayofweek
-
-    features = [
-        'trip_distance',
-        'PULocationID',
-        'DOLocationID',
-        'pickup_hour',
-        'day_of_week'
-    ]
-    target = 'total_amount'
-
-    return df[features], df[target]
-
-
 def load_data(filepath: str, test_rate=0.2):
     """
     Orchestrate data loading: download, read, and split.
@@ -186,3 +123,117 @@ def load_data(filepath: str, test_rate=0.2):
     except Exception as e:
         print(f"Error while reading parquet files : {e}")
         sys.exit(1)
+
+
+def prepare_data_training(df: pd.DataFrame):
+    """
+    Feature engineering and data cleaning pipeline for model training.
+
+    It performs the following steps:
+    1. Validates existence of required columns and target column.
+    2. Checks for data anomalies (negative values).
+    3. Extracts time-based features (hour, day of week).
+    4. Separates features (X) from the target (y).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The raw input dataframe containing trip information.
+
+    Returns
+    -------
+    tuple of (pd.DataFrame, pd.Series)
+        - X (DataFrame): The feature matrix (distance, locations, time).
+        - y (Series): The target variable (total_amount).
+
+    Raises
+    ------
+    KeyError
+        If a required column is missing from the input dataframe.
+    ValueError
+        If negative values are detected in distance or amount.
+    """
+    for col in REQUIRED_COLUMNS:
+        if col not in df.columns:
+            raise KeyError(f"Missing required column {col}")
+
+    if TARGET_COLUMN not in df.columns:
+        raise KeyError(f"Missing target column {TARGET_COLUMN}")
+
+    if (df['trip_distance'] <= 0).any() or (df['total_amount'] < 0).any():
+        raise ValueError("Error: negative value detected")
+
+    if df['tpep_pickup_datetime'].dtype == 'object':
+        df['tpep_pickup_datetime'] = pd.to_datetime(
+            df['tpep_pickup_datetime']
+        )
+
+    df['pickup_hour'] = df['tpep_pickup_datetime'].dt.hour
+    df['day_of_week'] = df['tpep_pickup_datetime'].dt.dayofweek
+
+    features = [
+        'trip_distance',
+        'PULocationID',
+        'DOLocationID',
+        'pickup_hour',
+        'day_of_week'
+    ]
+    target = 'total_amount'
+
+    return df[features], df[target]
+
+
+def prepare_data_inference(df: pd.DataFrame):
+    """
+    Feature engineering and data cleaning pipeline for inference.
+
+    It performs the following steps:
+    1. Validates existence of required columns and absence of target column.
+    2. Checks for data anomalies (negative values).
+    3. Extracts time-based features (hour, day of week).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The raw input dataframe containing trip information.
+
+    Returns
+    -------
+    X (DataFrame): The feature matrix (distance, locations, time).
+
+    Raises
+    ------
+    KeyError
+        If a required column is missing or target column
+        is present from the input dataframe.
+    ValueError
+        If negative value is detected in distance.
+    """
+    for col in REQUIRED_COLUMNS:
+        if col not in df.columns:
+            raise KeyError(f"Missing required column {col}")
+
+    if TARGET_COLUMN in df.columns:
+        raise KeyError(f"Target column {TARGET_COLUMN} should "
+                       f"not be known for inference")
+
+    if (df['trip_distance'] <= 0).any():
+        raise ValueError("Error: negative value detected")
+
+    if df['tpep_pickup_datetime'].dtype == 'object':
+        df['tpep_pickup_datetime'] = pd.to_datetime(
+            df['tpep_pickup_datetime']
+        )
+
+    df['pickup_hour'] = df['tpep_pickup_datetime'].dt.hour
+    df['day_of_week'] = df['tpep_pickup_datetime'].dt.dayofweek
+
+    features = [
+        'trip_distance',
+        'PULocationID',
+        'DOLocationID',
+        'pickup_hour',
+        'day_of_week'
+    ]
+
+    return df[features]
