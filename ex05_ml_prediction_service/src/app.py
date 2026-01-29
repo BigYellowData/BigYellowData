@@ -1,22 +1,10 @@
-"""
-NYC Taxi Price Prediction Streamlit Application.
-
-This script runs a Streamlit web interface that allows users to input
-trip parameters (distance, pickup/dropoff locations, date/time) and
-retrieves a prediction from a pre-trained machine learning model.
-"""
-
+import sys
+import os
+import pytest
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from inference import load_model, predict_trip_price
-
-# Configuration of the Streamlit page
-st.set_page_config(
-    page_title="NYC Taxi Predictor",
-    page_icon="🚖",
-    layout="wide"
-)
+from inference import load_model, predict_trip_price, MODEL_LOAD_PATH
 
 
 @st.cache_data
@@ -36,107 +24,141 @@ def get_taxi_zones():
         'display_name' column. Returns an empty DataFrame if the file
         cannot be found or loaded.
     """
-    zone_path = "../data/external/taxi_zone_lookup.csv"
+    # Path relative to the project root
+    zone_path = "data/external/taxi_zone_lookup.csv"
+
+    # Fallback: handle case where script is run from inside src/
+    if not os.path.exists(zone_path) and os.path.exists("../" + zone_path):
+        zone_path = "../" + zone_path
+
     try:
         df = pd.read_csv(zone_path)
         df['display_name'] = df['Zone'] + " - " + df['Borough']
         return df
     except Exception as e:
-        st.error(f"Impossible de charger les zones de taxi : {e}")
+        st.error(f"Unable to load taxi zones: {e}")
         return pd.DataFrame()
 
 
-# --- Main Application Logic ---
-
-# 1. Load Data and Model
-df_zones = get_taxi_zones()
-model = None
-
-try:
-    # Attempt to load the trained pipeline
-    model = load_model("models/taxi_price_model.joblib")
-except FileNotFoundError:
-    st.warning(
-        "Model not found. Please ensure the model is trained and saved."
+def main():
+    """
+    Main function to render the Streamlit application.
+    """
+    # Configuration of the Streamlit page
+    st.set_page_config(
+        page_title="NYC Taxi Predictor",
+        page_icon="🚖",
+        layout="wide"
     )
 
-# 2. UI Layout
-st.title("NYC Taxi Predictor")
+    # --- Main Application Logic ---
 
-with st.container():
-    col_params, col_map = st.columns([1, 1])
-
-    # Left Column: User Inputs
-    with col_params:
-        st.subheader("Trip parameters")
-
-        with st.form("trip_form"):
-            distance = st.slider(
-                "Trip distance (miles)",
-                0.5,
-                50.0,
-                2.5,
-                step=0.1
-            )
-
-            # Default indices for JFK (132 usually) and Times Sq
-            idx_jfk = 131 if not df_zones.empty else 0
-            idx_ts = 229 if not df_zones.empty else 0
-
-            pickup_name = st.selectbox(
-                "Pickup location",
-                options=df_zones['display_name'],
-                index=idx_jfk,
-            )
-            dropoff_name = st.selectbox(
-                "Dropoff location",
-                options=df_zones['display_name'],
-                index=idx_ts
-            )
-
-            c1, c2 = st.columns(2)
-            d = c1.date_input("Date", datetime.now())
-            t = c2.time_input("Heure", datetime.now())
-
-            # Form submission button
-            submitted = st.form_submit_button(
-                "Predict price",
-                use_container_width=True
-            )
-
-
-# 3. Prediction Logic (Triggered on form submission)
-if submitted and model is not None:
-    # Retrieve LocationIDs from the selected display names
-    # Note: We use parentheses/line breaks to fit PEP 8 length limits
-    pickup_row = df_zones[df_zones['display_name'] == pickup_name]
-    pickup_id = pickup_row['LocationID'].values[0]
-
-    dropoff_row = df_zones[df_zones['display_name'] == dropoff_name]
-    dropoff_id = dropoff_row['LocationID'].values[0]
-
-    # Construct the datetime string as expected by the model pipeline
-    datetime_str = f"{d} {t}"
-
-    # Create the input DataFrame matching the model's expected schema
-    input_df = pd.DataFrame({
-        'trip_distance': [distance],
-        'PULocationID': [pickup_id],
-        'DOLocationID': [dropoff_id],
-        'tpep_pickup_datetime': [datetime_str]
-    })
+    # 1. Load Data and Model
+    df_zones = get_taxi_zones()
+    model = None
 
     try:
-        # Perform inference
-        price = predict_trip_price(model, input_df)
-
-        # Display results
-        st.divider()
-        st.success(f"Estimated price : **${price:.2f}**")
-        st.caption(
-            f"Trip from **{pickup_name}** to **{dropoff_name}** "
-            f"({distance} miles)"
+        # Load model using the constant imported from inference.py
+        model = load_model(MODEL_LOAD_PATH)
+    except FileNotFoundError:
+        st.warning(
+            "Model not found. Please ensure the model is trained and saved."
         )
-
     except Exception as e:
-        st.error(f"Error during prediction : {e}")
+        st.error(f"Error loading model: {e}")
+
+    # 2. UI Layout
+    st.title("NYC Taxi Predictor")
+
+    with st.container():
+        col_params, col_map = st.columns([1, 1])
+
+        # Left Column: User Inputs
+        with col_params:
+            st.subheader("Trip parameters")
+
+            with st.form("trip_form"):
+                distance = st.slider(
+                    "Trip distance (miles)",
+                    0.5,
+                    50.0,
+                    2.5,
+                    step=0.1
+                )
+
+                # Default indices handling (JFK=132, Times Sq=237 approx)
+                # We use safe defaults (0) if dataframe is empty
+                idx_jfk = 131 if not df_zones.empty else 0
+                idx_ts = 229 if not df_zones.empty else 0
+
+                pickup_name = st.selectbox(
+                    "Pickup location",
+                    options=df_zones['display_name'],
+                    index=idx_jfk,
+                )
+                dropoff_name = st.selectbox(
+                    "Dropoff location",
+                    options=df_zones['display_name'],
+                    index=idx_ts
+                )
+
+                c1, c2 = st.columns(2)
+                d = c1.date_input("Date", datetime.now())
+                t = c2.time_input("Time", datetime.now())
+
+                # Form submission button
+                submitted = st.form_submit_button(
+                    "Predict price",
+                    use_container_width=True
+                )
+
+    # 3. Prediction Logic (Triggered on form submission)
+    if submitted and model is not None:
+        if df_zones.empty:
+            st.error("Taxi zones data is missing. Cannot predict.")
+            st.stop()
+
+        # Retrieve LocationIDs from the selected display names
+        pickup_row = df_zones[df_zones['display_name'] == pickup_name]
+        pickup_id = pickup_row['LocationID'].values[0]
+
+        dropoff_row = df_zones[df_zones['display_name'] == dropoff_name]
+        dropoff_id = dropoff_row['LocationID'].values[0]
+
+        # Construct the datetime string as expected by the model pipeline
+        datetime_str = f"{d} {t}"
+
+        # Create the input DataFrame matching the model's expected schema
+        input_df = pd.DataFrame({
+            'trip_distance': [distance],
+            'PULocationID': [pickup_id],
+            'DOLocationID': [dropoff_id],
+            'tpep_pickup_datetime': [datetime_str]
+        })
+
+        try:
+            # Perform inference
+            price = predict_trip_price(model, input_df)
+
+            # Display results
+            st.divider()
+            st.success(f"Estimated price: **${price:.2f}**")
+            st.caption(
+                f"Trip from **{pickup_name}** to **{dropoff_name}** "
+                f"({distance} miles)"
+            )
+
+        except Exception as e:
+            st.error(f"Error during prediction: {e}")
+
+
+if __name__ == "__main__":
+    print("Running integrity tests before starting the app...")
+    exit_code = pytest.main(["-q", "tests/test_inference.py"])
+
+    if exit_code != 0:
+        print("CRITICAL: Inference tests failed. Application aborted.")
+        sys.exit(1)
+
+    print("Tests passed. Starting Streamlit Application...")
+    main()
