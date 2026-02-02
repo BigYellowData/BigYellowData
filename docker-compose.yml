@@ -139,6 +139,120 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ============================================================================
+  # Airflow Services (Ex06)
+  # ============================================================================
+
+  # PostgreSQL for Airflow metadata (separate from data warehouse)
+  airflow-postgres:
+    image: postgres:15
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-postgres-data:/var/lib/postgresql/data
+    networks:
+      - spark-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Airflow initialization
+  airflow-init:
+    build: ./ex06_airflow
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=dGhpc19pc19hX3NlY3VyZV9rZXlfZm9yX2RldmVsb3BtZW50
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    networks:
+      - spark-network
+
+  # Airflow Webserver
+  airflow-webserver:
+    build: ./ex06_airflow
+    container_name: airflow-webserver
+    command: webserver
+    ports:
+      - "8082:8080"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=dGhpc19pc19hX3NlY3VyZV9rZXlfZm9yX2RldmVsb3BtZW50
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./ex06_airflow/dags:/opt/airflow/dags
+      - ./ex06_airflow/logs:/opt/airflow/logs
+      - ./ex06_airflow/plugins:/opt/airflow/plugins
+      - ./ex06_airflow/scripts:/opt/airflow/scripts
+      - .:/project:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    networks:
+      - spark-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Airflow Scheduler
+  airflow-scheduler:
+    build: ./ex06_airflow
+    container_name: airflow-scheduler
+    command: scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=dGhpc19pc19hX3NlY3VyZV9rZXlfZm9yX2RldmVsb3BtZW50
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./ex06_airflow/dags:/opt/airflow/dags
+      - ./ex06_airflow/logs:/opt/airflow/logs
+      - ./ex06_airflow/plugins:/opt/airflow/plugins
+      - ./ex06_airflow/scripts:/opt/airflow/scripts
+      - .:/project:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    networks:
+      - spark-network
+    restart: unless-stopped
+
+volumes:
+  airflow-postgres-data:
+
 networks:
   spark-network:
     driver: bridge

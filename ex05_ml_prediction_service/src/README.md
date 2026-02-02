@@ -1,4 +1,4 @@
-# Machine Learning Prediction Service
+# Exercise 5: Machine Learning Prediction Service (MLOps)
 
 This module implements a complete Machine Learning pipeline for predicting NYC taxi fares. It is designed following an **industrial MLOps approach**, integrating automatic unit tests, strict data schema validation, and an interactive Streamlit user interface.
 

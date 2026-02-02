@@ -22,7 +22,7 @@ echo ""
 
 # Vérifier l'argument
 if [ $# -lt 1 ]; then
-  echo -e "${RED}Usage: $0 [ex01|ex02|ex03|ex04|all]${NC}"
+  echo -e "${RED}Usage: $0 [ex01|ex02|ex03|ex04|ex05|ex05-app|ex06|all]${NC}"
   exit 1
 fi
 
@@ -108,6 +108,19 @@ if [ "$EXERCISE" = "all" ]; then
   echo -e "${GREEN}✓ Dashboard prêt !${NC}"
   echo ""
 
+  echo -e "${BLUE}=== Exercice 5: ML Prediction Service (Training) ===${NC}"
+  cd ex05_ml_prediction_service
+  if command -v uv &> /dev/null; then
+    uv sync
+    uv run python src/train.py
+  else
+    echo -e "${RED}uv n'est pas installé. Installez-le avec: curl -LsSf https://astral.sh/uv/install.sh | sh${NC}"
+    exit 1
+  fi
+  cd ..
+  echo -e "${GREEN}✓ Modèle ML entraîné !${NC}"
+  echo ""
+
 elif [ "$EXERCISE" = "ex01" ]; then
   echo -e "${BLUE}=== Exercice 1: Data Retrieval ===${NC}"
   ./run_spark_docker.sh ex01_data_retrieval SparkApp
@@ -130,9 +143,60 @@ elif [ "$EXERCISE" = "ex04" ]; then
   echo -e "${GREEN}✓ Dashboard prêt !${NC}"
   echo -e "${GREEN}🌐 Accéder au dashboard: http://localhost:8501${NC}"
 
+elif [ "$EXERCISE" = "ex05" ]; then
+  echo -e "${BLUE}=== Exercice 5: ML Prediction Service (Training) ===${NC}"
+  cd ex05_ml_prediction_service
+  if command -v uv &> /dev/null; then
+    uv sync
+    uv run python src/train.py
+  else
+    echo -e "${RED}uv n'est pas installé. Installez-le avec: curl -LsSf https://astral.sh/uv/install.sh | sh${NC}"
+    exit 1
+  fi
+  cd ..
+  echo -e "${GREEN}✓ Modèle ML entraîné !${NC}"
+
+elif [ "$EXERCISE" = "ex05-app" ]; then
+  echo -e "${BLUE}=== Exercice 5: ML Prediction Service (Streamlit App) ===${NC}"
+  cd ex05_ml_prediction_service
+  if command -v uv &> /dev/null; then
+    uv sync
+    echo -e "${GREEN}🌐 Lancement de l'application Streamlit sur http://localhost:8502${NC}"
+    uv run streamlit run src/app.py --server.port 8502
+  else
+    echo -e "${RED}uv n'est pas installé. Installez-le avec: curl -LsSf https://astral.sh/uv/install.sh | sh${NC}"
+    exit 1
+  fi
+  cd ..
+
+elif [ "$EXERCISE" = "ex06" ]; then
+  echo -e "${BLUE}=== Exercice 6: Airflow Orchestration ===${NC}"
+  echo -e "${YELLOW}🔧 Construction et démarrage d'Airflow...${NC}"
+
+  # Initialisation d'Airflow (création de la DB et utilisateur admin)
+  echo -e "${YELLOW}⏳ Initialisation de la base Airflow...${NC}"
+  docker compose up -d airflow-postgres
+  sleep 5
+  docker compose run --rm airflow-init
+
+  # Démarrer les services Airflow
+  echo -e "${YELLOW}🚀 Démarrage d'Airflow webserver et scheduler...${NC}"
+  docker compose up -d airflow-webserver airflow-scheduler
+
+  echo -e "${YELLOW}⏳ Attente du démarrage d'Airflow (30s)...${NC}"
+  sleep 30
+
+  echo -e "${GREEN}✓ Airflow prêt !${NC}"
+  echo -e "${GREEN}🌐 Accéder à Airflow: http://localhost:8082${NC}"
+  echo -e "${YELLOW}   Identifiants: admin / admin${NC}"
+  echo ""
+  echo -e "${BLUE}DAGs disponibles:${NC}"
+  echo "  - nyc_taxi_full_pipeline: Pipeline complet (manuel)"
+  echo "  - nyc_taxi_monthly_refresh: Refresh mensuel (planifié)"
+
 else
   echo -e "${RED}Exercice inconnu: $EXERCISE${NC}"
-  echo -e "${YELLOW}Usage: $0 [ex01|ex02|ex03|ex04|all]${NC}"
+  echo -e "${YELLOW}Usage: $0 [ex01|ex02|ex03|ex04|ex05|ex05-app|ex06|all]${NC}"
   exit 1
 fi
 
@@ -146,6 +210,12 @@ echo "  - Spark Master UI:  http://localhost:8081"
 echo "  - MinIO Console:    http://localhost:9001"
 echo "  - pgAdmin:          http://localhost:5050"
 if [ "$EXERCISE" = "ex04" ] || [ "$EXERCISE" = "all" ]; then
-  echo "  - Dashboard:        http://localhost:8501"
+  echo "  - Dashboard (Ex04): http://localhost:8501"
+fi
+if [ "$EXERCISE" = "ex05-app" ]; then
+  echo "  - ML Prediction:    http://localhost:8502"
+fi
+if [ "$EXERCISE" = "ex06" ]; then
+  echo "  - Airflow UI:       http://localhost:8082 (admin/admin)"
 fi
 echo ""
