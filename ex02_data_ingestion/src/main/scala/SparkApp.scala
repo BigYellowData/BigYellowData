@@ -4,15 +4,18 @@ import org.apache.spark.sql.types._
 import org.apache.log4j.{Logger, Level}
 
 /**
- * Pipeline de nettoyage des données NYC Taxi - Version Optimisée v5.0
+ * Exercise 2: NYC Taxi Data Cleaning Pipeline 
  *
- * Optimisations appliquées:
- * - Lazy evaluation maximisée (un seul action à la fin)
- * - Broadcast pour toutes les petites tables
- * - Filtres combinés en un minimum de passes
- * - Pas de count() intermédiaires (utilisation d'accumulateurs)
- * - Cache stratégique uniquement où nécessaire
- * - Colonnes calculées en une seule passe
+ * Major Optimizations Applied:
+ * - Maximized lazy evaluation (single action triggering at the end).
+ * - Broadcast joins for all small reference tables (zones, route stats).
+ * - Combined filter logic into minimal passes to reduce DAG complexity.
+ * - Avoidance of intermediate count() actions (using accumulators if needed, or deferred).
+ * - Strategic caching only where data is reused (e.g., after expensive anti-joins).
+ * - Single-pass column generation for derived metrics.
+ *
+ * @author BigYellowData Team
+ * @version 1.0
  */
 object SparkApp extends App {
 
@@ -30,7 +33,7 @@ object SparkApp extends App {
   val zonesPath = s"s3a://$bucketName/taxi_zone_lookup.csv"
   val outputPath = s"s3a://$bucketName/dwh/yellow_taxi_refined/"
 
-  // Seuils de configuration
+  // Business Logic Thresholds
   val MIN_DURATION_MINUTES = 2.0
   val MAX_SPEED_MPH = 120.0
   val SPEED_YELLOW_ZONE = 45.0
@@ -50,7 +53,7 @@ object SparkApp extends App {
   val startTime = System.currentTimeMillis()
 
   // ==============================================================================
-  // SPARK SESSION - Configuration optimisée
+  // SPARK SESSION - Optimized Configuration
   // ==============================================================================
   val spark = SparkSession.builder()
     .appName("NYCTaxi-UltraOptimized")
@@ -62,7 +65,7 @@ object SparkApp extends App {
     .config("spark.hadoop.fs.s3a.path.style.access", "true")
     .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
     .config("spark.hadoop.fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
-    // Optimisations mémoire et shuffle
+    // Memory and Shuffle Optimizations
     .config("spark.sql.adaptive.enabled", "true")
     .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
     .config("spark.sql.adaptive.skewJoin.enabled", "true")
@@ -70,7 +73,7 @@ object SparkApp extends App {
     .config("spark.sql.autoBroadcastJoinThreshold", "50MB")
     .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     .config("spark.sql.parquet.compression.codec", "snappy")
-    // Optimisations S3
+    // S3 Upload Optimizations
     .config("spark.hadoop.fs.s3a.fast.upload", "true")
     .config("spark.hadoop.fs.s3a.fast.upload.buffer", "bytebuffer")
     .getOrCreate()
@@ -79,21 +82,21 @@ object SparkApp extends App {
   import spark.implicits._
 
   // ==============================================================================
-  // ÉTAPE 1: Chargement des zones (petite table depuis MinIO)
+  // STEP 1: Loading reference zones (small table from MinIO)
   // ==============================================================================
-  println("\n[1/6] Chargement des zones de référence depuis MinIO...")
-  println("       (Première connexion S3 - peut prendre quelques secondes)")
+  println("\n[1/6] Loading reference zones from MinIO...")
+  println("       (Initial S3 connection - may take a few seconds)")
 
   val zonesDF = spark.read
     .option("header", "true")
     .option("inferSchema", "true")
     .csv(zonesPath)
 
-  // Collecter les IDs valides en local (265 lignes seulement)
+  // Collect valid LocationIDs locally for filtering (small dataset ~265 rows)
   val validLocationIDs = zonesDF.select("LocationID").distinct().as[Int].collect().toSeq
-  println(s"       → ${validLocationIDs.size} zones chargées")
+  println(s"       → ${validLocationIDs.size} zones loaded")
 
-  // DataFrames pour les joins (broadcast automatique car < 50MB)
+  // Prepare DataFrames for joins (automatically broadcasted due to size < 50MB)
   val puZonesDF = zonesDF
     .withColumnRenamed("LocationID", "PULocationID")
     .withColumnRenamed("Borough", "PU_Borough")
@@ -107,9 +110,9 @@ object SparkApp extends App {
     .withColumnRenamed("service_zone", "DO_service_zone")
 
   // ==============================================================================
-  // ÉTAPE 2: Lecture et nettoyage initial (LAZY - pas d'action)
+  // STEP 2: Reading and initial cleaning (LAZY - no action yet)
   // ==============================================================================
-  println("\n[2/6] Lecture et filtrage initial des données...")
+  println("\n[2/6] Reading and applying initial filters...")
 
   val allowedVendors = Seq(1, 2, 6, 7)
   val allowedRatecodes = Seq(1, 2, 3, 4, 5, 6, 99)
@@ -119,11 +122,11 @@ object SparkApp extends App {
   val amountCols = Seq("fare_amount", "extra", "mta_tax", "tip_amount", "tolls_amount",
     "improvement_surcharge", "congestion_surcharge", "Airport_fee", "cbd_congestion_fee", "total_amount")
 
-  // Lecture + tous les filtres contractuels en UNE SEULE PASSE
-  // Utilisation de isin() au lieu d'UDF pour la validation des zones (plus performant)
+  // Read Parquet + Apply all contractual filters in a SINGLE PASS
+  // Optimization: Use `isin()` instead of UDFs for zone validation (more performant)
   val cleanedDF = spark.read.parquet(filesPath)
     .na.fill(0.0, amountCols)
-    // Filtre contractuel combiné
+    // Combined contractual Filter
     .filter(
       $"passenger_count".isNotNull &&
       $"passenger_count".between(1, 6) &&
@@ -140,22 +143,22 @@ object SparkApp extends App {
       $"fare_amount" >= 0.0 &&
       $"total_amount" >= 0.0 &&
       (!$"payment_type".isin(payingTypes: _*) || $"total_amount" > 0.0) &&
-      // Validation zones - utilise isin() au lieu d'UDF
+      // Zone validation - using isin() instead of UDF
       $"PULocationID".isin(validLocationIDs: _*) &&
       $"DOLocationID".isin(validLocationIDs: _*) &&
-      // Tips aberrants
+      // Aberrant tips
       ($"tip_amount".isNull || $"tip_amount" <= ($"total_amount" - $"tip_amount") || $"payment_type" =!= 1)
     )
 
-  println("       → Filtres contractuels appliqués (lazy)")
+  println("       → Contractual filters applied (lazy) (lazy)")
 
   // ==============================================================================
-  // ÉTAPE 3: Calculs dérivés + Déduplication (LAZY)
+  // STEP 3: Derived Metrics + Deduplication (LAZY)
   // ==============================================================================
-  println("\n[3/6] Calcul des métriques dérivées...")
+  println("\n[3/6] Calculating derived metrics...")
 
   val withMetricsDF = cleanedDF
-    // Calcul durée et vitesse
+    // Calculate duration and speed  
     .withColumn("trip_duration_hours",
       (unix_timestamp($"tpep_dropoff_datetime") - unix_timestamp($"tpep_pickup_datetime")) / 3600.0)
     .withColumn("avg_speed_mph",
@@ -164,32 +167,32 @@ object SparkApp extends App {
       when($"total_amount" > 0, $"tip_amount" / $"total_amount"))
     .withColumn("price_per_mile",
       when($"trip_distance" > 0.1, $"total_amount" / $"trip_distance").otherwise(0.0))
-    // Clé de déduplication
+    // Deduplication Key
     .withColumn("dedup_key", concat_ws("_",
       $"tpep_pickup_datetime".cast("string"),
       $"tpep_dropoff_datetime".cast("string"),
       $"PULocationID", $"DOLocationID",
       round($"total_amount", 2), $"VendorID", $"passenger_count"))
-    // Filtre vitesse/durée
+    // Filter logical anomalies (Speed/Duration) 
     .filter(
       $"trip_duration_hours" >= (MIN_DURATION_MINUTES / 60.0) &&
       $"avg_speed_mph".isNotNull &&
       $"avg_speed_mph" <= MAX_SPEED_MPH &&
-      // Boucles (même zone)
+      // Loop Detection (loops within the same zonemême zone)
       when($"PULocationID" === $"DOLocationID", $"trip_distance" < MAX_LOOP_DISTANCE).otherwise(lit(true))
     )
-    // Déduplication
+    // Deduplication
     .dropDuplicates("dedup_key")
     .drop("dedup_key")
 
-  println("       → Métriques calculées (lazy)")
+  println("       → Metrics calculated (lazy)")
 
   // ==============================================================================
-  // ÉTAPE 4: Détection des remboursements (nécessite une action)
+  // STEP 4: Refunds detection (requires an action)
   // ==============================================================================
-  println("\n[4/6] Détection des remboursements...")
+  println("\n[4/6] Detecting refunds...")
 
-  // Clé de trip pour détecter les paires refund
+  // Generate a composite key to identify refund pairs (Trip A + Refund -A)
   val withRefundKey = withMetricsDF.withColumn("refund_key",
     concat_ws("_",
       unix_timestamp($"tpep_pickup_datetime"),
@@ -198,7 +201,7 @@ object SparkApp extends App {
       round(abs($"total_amount"), 2),
       $"PULocationID", $"DOLocationID", $"VendorID"))
 
-  // Trouver les clés avec positif ET négatif
+  // Find keys that have both positive and negative total_amount 
   val refundKeys = withRefundKey
     .groupBy("refund_key")
     .agg(
@@ -207,21 +210,21 @@ object SparkApp extends App {
     .filter($"pos" > 0 && $"neg" > 0)
     .select("refund_key")
 
-  // Anti-join pour supprimer les remboursements
+  // Left Anti Join to exclude refund
   val noRefundsDF = withRefundKey
     .join(broadcast(refundKeys), Seq("refund_key"), "left_anti")
     .drop("refund_key")
-    .cache()  // Cache ici car utilisé pour stats route + suite du pipeline
+    .cache()  // CACHE POINT: Data is reused for Route Stats + Final Pipeline
 
   val countAfterRefunds = noRefundsDF.count()
   println(s"       → $countAfterRefunds lignes après suppression remboursements")
 
   // ==============================================================================
-  // ÉTAPE 5: Stats par route + Outliers + Enrichissement (LAZY sur cache)
+  // STEP 5: Route Statistics + Outlier Detection + Enrichment (LAZY on Cached Data)
   // ==============================================================================
-  println("\n[5/6] Analyse statistique et détection d'outliers...")
+  println("\n[5/6] Statistical analysis and outlier detection...")
 
-  // Stats par route (broadcast car petit résultat)
+  // Calculate stats per route (Broadcast candidate as result is relatively small)
   val routeStats = noRefundsDF
     .groupBy("PULocationID", "DOLocationID")
     .agg(
@@ -230,7 +233,7 @@ object SparkApp extends App {
       count("*").as("route_count"))
     .filter($"route_count" >= MIN_ROUTE_TRIPS)
 
-  // Calcul IQR sur Standard Rate (RateCode=1) - UN SEUL calcul
+  // Calculate IQR on Standard Rate (RateCode=1) - SINGLE CALCULATION
   val standardTrips = noRefundsDF.filter($"RateCodeID" === 1)
   val iqrCols = Array("trip_distance", "total_amount", "avg_speed_mph", "trip_duration_hours")
   val quantiles = standardTrips.stat.approxQuantile(iqrCols, Array(0.25, 0.75), 0.01)
@@ -242,7 +245,7 @@ object SparkApp extends App {
     col -> (q1 - 1.5 * iqr, q3 + 1.5 * iqr)
   }.toMap
 
-  println("       → Bornes IQR calculées:")
+  println("       → IQR Bounds calculated:")
   iqrBounds.foreach { case (col, (low, high)) =>
     println(f"         $col: [$low%.2f, $high%.2f]")
   }
@@ -252,19 +255,19 @@ object SparkApp extends App {
   val (speedLow, speedHigh) = iqrBounds("avg_speed_mph")
   val (durLow, durHigh) = iqrBounds("trip_duration_hours")
 
-  // Pipeline final: join zones + stats route + outliers + métadonnées
+  // Final pipeline: join zones + route stats + outliers + metadata
   val finalDF = noRefundsDF
-    // Join avec stats de route (broadcast)
+    // Join with route stats (Broadcast)
     .join(broadcast(routeStats), Seq("PULocationID", "DOLocationID"), "left")
-    // Filtre Z-Score
+    // Filter Z-Score Outliers
     .filter(
       $"route_stddev_dist".isNull || $"route_stddev_dist" === 0.0 ||
       abs($"trip_distance" - $"route_avg_dist") <= lit(ZSCORE_THRESHOLD) * $"route_stddev_dist")
     .drop("route_avg_dist", "route_stddev_dist", "route_count")
-    // Join avec zones (broadcast automatique)
+    // Join with Zone info (Broadcast)
     .join(broadcast(puZonesDF), Seq("PULocationID"), "left")
     .join(broadcast(doZonesDF), Seq("DOLocationID"), "left")
-    // Flags outliers
+    // Outlier flagging
     .withColumn("is_airport_trip",
       $"PU_service_zone" === "Airports" || $"DO_service_zone" === "Airports")
     .withColumn("is_yellow_zone",
@@ -278,26 +281,26 @@ object SparkApp extends App {
       ($"is_yellow_zone" && $"avg_speed_mph" > SPEED_YELLOW_ZONE) ||
       (!$"is_yellow_zone" && $"avg_speed_mph" > SPEED_GLOBAL))
     .withColumn("out_duration_long", $"trip_duration_hours" > MAX_DURATION_HOURS)
-    // Décision outlier finale
+    // Final Outlier Decision
     .withColumn("is_outlier",
       $"out_price_mile" || $"out_speed_zone" || $"out_duration_long" ||
       ($"out_amount_iqr" && $"out_distance_iqr" && $"price_per_mile" > 20.0))
-    // Score qualité
+    // Quality score
     .withColumn("data_quality_score",
       when($"is_outlier", 0)
       .when($"out_distance_iqr" || $"out_amount_iqr", 75)
       .otherwise(100))
-    // Raison outlier
+    // Outlier Reasoning
     .withColumn("outlier_reason", concat_ws(", ",
       when($"out_speed_zone", "High Speed"),
       when($"out_price_mile", "Price/Mile > $25"),
       when($"out_duration_long", "Duration > 5h")))
-    // Métadonnées
+    // Metadata
     .withColumn("date_id", date_format($"tpep_pickup_datetime", "yyyyMMdd").cast("int"))
     .withColumn("trip_duration_minutes", $"trip_duration_hours" * 60.0)
     .withColumn("processing_timestamp", current_timestamp())
     .withColumn("pipeline_version", lit(pipelineVersion))
-    // Sélection finale des colonnes DWH
+    // Final selection of columns DWH  
     .select(
       $"date_id", $"VendorID".as("vendor_id"), $"RatecodeID".as("ratecode_id"),
       $"payment_type".as("payment_type_id"), $"PULocationID".as("pickup_location_id"),
@@ -311,11 +314,11 @@ object SparkApp extends App {
       $"processing_timestamp", $"pipeline_version")
 
   // ==============================================================================
-  // ÉTAPE 6: Écriture + Rapport (SEULE ACTION MAJEURE)
+  // STEP 6: Write Output & Generate Report (THE MAJOR ACTION)
   // ==============================================================================
-  println("\n[6/6] Écriture et génération du rapport...")
+  println("\n[6/6] Writing output and generating report...")
 
-  // Écriture avec repartitionnement par date
+  // Write Parquet partitioned by date
   finalDF
     .repartition($"date_id")
     .write
@@ -323,10 +326,10 @@ object SparkApp extends App {
     .partitionBy("date_id")
     .parquet(outputPath)
 
-  // Libérer le cache
+  // Free the cache 
   noRefundsDF.unpersist()
 
-  // Relire pour stats finales (lecture rapide depuis le parquet écrit)
+  // Read back written data for final verification statistics
   val writtenDF = spark.read.parquet(outputPath)
 
   val stats = writtenDF.agg(
@@ -346,24 +349,24 @@ object SparkApp extends App {
   val good = stats.getLong(3)
 
   println("\n" + "=" * 80)
-  println("  RAPPORT FINAL")
+  println("  FINAL REPORT")
   println("=" * 80)
-  println(f"  Total courses:        $total%,d")
-  println(f"  Qualité parfaite:     $perfect%,d (${perfect * 100.0 / total}%.1f%%)")
-  println(f"  Bonne qualité:        $good%,d (${good * 100.0 / total}%.1f%%)")
+  println(f"  Total Trips:        $total%,d")
+  println(f"  Perfect Quality:     $perfect%,d (${perfect * 100.0 / total}%.1f%%)")
+  println(f"  Good Quality:        $good%,d (${good * 100.0 / total}%.1f%%)")
   println(f"  Outliers:             $outliers%,d (${outliers * 100.0 / total}%.1f%%)")
   println(f"  Distance:             min=${stats.getDouble(6)}%.2f, max=${stats.getDouble(7)}%.2f, avg=${stats.getDouble(4)}%.2f mi")
-  println(f"  Montant moyen:        $$${stats.getDouble(5)}%.2f")
+  println(f"  Average Amount:        $$${stats.getDouble(5)}%.2f")
 
   // Vérifications
   val qualityRatio = (perfect + good).toDouble / total
   println("\n  TESTS:")
-  println(s"  ✅ Dataset non vide: $total lignes")
-  println(f"  ${if (qualityRatio >= 0.70) "✅" else "❌"} Qualité >= 70%%: $qualityRatio%.1f%%")
+  println(s"  ✅ Dataset not empty: $total lines")
+  println(f"  ${if (qualityRatio >= 0.70) "✅" else "❌"} Quality >= 70%%: $qualityRatio%.1f%%")
 
   val duration = (System.currentTimeMillis() - startTime) / 60000.0
   println("\n" + "=" * 80)
-  println(f"  ✅ PIPELINE TERMINÉ EN $duration%.2f MINUTES")
+  println(f"  ✅ PIPELINE COMPLETED IN $duration%.2f MINUTES")
   println("=" * 80)
 
   spark.stop()

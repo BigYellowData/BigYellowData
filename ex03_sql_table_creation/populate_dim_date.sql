@@ -1,14 +1,14 @@
 -- ============================================================================
 --  populate_dim_date.sql
---  Génère dim_date automatiquement à partir des dates réelles de fact_trip
+--  Automatically populates dim_date based on actual dates in fact_trip
 -- ============================================================================
 
 SET search_path TO dw;
 
--- Vider dim_date existante
+-- Clear existing dim_date 
 TRUNCATE TABLE dim_date CASCADE;
 
--- Générer uniquement les dates présentes dans fact_trip
+-- Generate only dates present in fact_trip
 INSERT INTO dim_date (date_id, full_date, year, month, day, day_of_week, day_name, month_name, is_weekend)
 SELECT DISTINCT
     date_id,
@@ -24,8 +24,8 @@ FROM fact_trip
 ORDER BY date_id
 ON CONFLICT (date_id) DO NOTHING;
 
--- Ajouter la contrainte FK maintenant que dim_date est remplie
--- (ignorer l'erreur si elle existe déjà)
+-- Apply Foreign Key constraint now that dim_date is populated
+-- (Gracefully handle if constraint already exists)
 DO $$
 BEGIN
     ALTER TABLE fact_trip ADD CONSTRAINT fk_fact_trip_date
@@ -35,7 +35,7 @@ EXCEPTION
         RAISE NOTICE 'FK constraint already exists';
 END $$;
 
--- Afficher le résumé
+-- Validation Summary
 DO $$
 DECLARE
     v_date_count INTEGER;

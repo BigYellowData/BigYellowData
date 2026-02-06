@@ -3,12 +3,24 @@ import org.apache.spark.sql.functions._
 import org.apache.log4j.{Logger, Level}
 
 /**
- * Ex03: Load refined data from MinIO into PostgreSQL fact_trip
+ * Exercise 3: Data Loading Pipeline (ETL - Load Phase).
+ *
+ * This application is responsible for loading the refined data (cleaned and enriched)
+ * from the Data Lake (MinIO) into the Data Warehouse (PostgreSQL).
+ * It maps the Spark DataFrame to the target 'fact_trip' table schema and performs
+ * an optimized JDBC bulk insert.
+ *
+ * @author BigYellowData Team
+ * @version 1.0
  */
 object SparkApp extends App {
 
   Logger.getLogger("org").setLevel(Level.ERROR)
   Logger.getLogger("akka").setLevel(Level.ERROR)
+
+  // ==============================================================================
+  // CONFIGURATION
+  // ==============================================================================
 
   // MinIO config
   val user = sys.env.getOrElse("MINIO_ROOT_USER", "minioadmin")
@@ -29,6 +41,9 @@ object SparkApp extends App {
 
   val startTime = System.currentTimeMillis()
 
+  // ==============================================================================
+  // SPARK SESSION
+  // ==============================================================================
   val spark = SparkSession.builder()
     .appName("Ex03-LoadFactTrip")
     .master("spark://spark-master:7077")
@@ -46,6 +61,9 @@ object SparkApp extends App {
   spark.sparkContext.setLogLevel("ERROR")
   import spark.implicits._
 
+  // ==============================================================================
+  // STEP 1: Read Refined Data
+  // ==============================================================================s
   println("\n[1/3] Reading refined data from MinIO...")
 
   val refinedDF = spark.read.parquet(inputPath)
@@ -53,6 +71,9 @@ object SparkApp extends App {
   val rowCount = refinedDF.count()
   println(s"      -> $rowCount rows loaded from parquet")
 
+  // ==============================================================================
+  // STEP 2: Schema Mapping
+  // ==============================================================================
   println("\n[2/3] Preparing data for PostgreSQL...")
 
   // Select columns matching fact_trip schema (excluding trip_id which is auto-generated)
@@ -85,6 +106,9 @@ object SparkApp extends App {
     $"outlier_reason"
   )
 
+  // ==============================================================================
+  // STEP 3: Write to JDBC (Bulk Insert)
+  // ==============================================================================
   println("\n[3/3] Writing to PostgreSQL (dw.fact_trip)...")
   println("      This may take several minutes for large datasets...")
 

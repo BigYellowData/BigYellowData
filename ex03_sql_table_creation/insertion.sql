@@ -1,12 +1,12 @@
 -- ============================================================================
 --  insertion.sql
---  Population des dimensions statiques (Reference Data)
+--  Populating the static dimensions (Reference Data)
 -- ============================================================================
 
 SET search_path TO dw;
 
 -- 1) dim_vendor
--- Les IDs sont standards dans le dataset NYC TLC
+-- Standard Vendor IDs provided in the NYC TLC dataset
 INSERT INTO dim_vendor (vendor_id, vendor_name) VALUES
                                                     (1, 'Creative Mobile Technologies, LLC'),
                                                     (2, 'VeriFone Inc.'),
@@ -39,17 +39,17 @@ INSERT INTO dim_payment_type (payment_type_id, description) VALUES
 
 ON CONFLICT (payment_type_id) DO NOTHING;
 
--- 4) dim_date - Sera générée automatiquement après chargement de fact_trip
--- (voir populate_dim_date.sql qui extrait les dates réelles des données)
+-- 4) dim_date - Will be auto-generated after fact_trip loading
+-- (Refer to populate_dim_date.sql which extracts actual dates from the transaction data)
 
 -- 5) dim_location
--- Le fichier taxi_zone_lookup.csv doit être copié dans /tmp/ du conteneur PostgreSQL
--- avant d'exécuter ce script (voir run_spark_docker.sh)
+-- The file taxi_zone_lookup.csv must be copied to /tmp/ in the PostgreSQL container
+-- prior to executing this script (see run_spark_docker.sh)
 COPY dim_location(location_id, borough, zone, service_zone)
 FROM '/tmp/taxi_zone_lookup.csv' DELIMITER ',' CSV HEADER;
 
 -- ============================================================================
---  6) Vérification des dimensions chargées
+--  6) Dimension Data Verification 
 -- ============================================================================
 
 DO $$
@@ -63,7 +63,7 @@ BEGIN
     SELECT COUNT(*) INTO v_vendor_count FROM dim_vendor;
     SELECT COUNT(*) INTO v_ratecode_count FROM dim_ratecode;
     SELECT COUNT(*) INTO v_payment_count FROM dim_payment_type;
-    SELECT COUNT(*) INTO v_date_count FROM dim_date;  -- Sera 0 ici, rempli après fact_trip
+    SELECT COUNT(*) INTO v_date_count FROM dim_date;  -- Expected to be 0 here, populated after fact_trip
     SELECT COUNT(*) INTO v_location_count FROM dim_location;
 
     RAISE NOTICE '========================================';
@@ -76,7 +76,7 @@ BEGIN
     RAISE NOTICE 'dim_location:     % rows', v_location_count;
     RAISE NOTICE '========================================';
 
-    -- Assertions pour garantir l'intégrité
+    -- Assertions to guarantee data integrity
     IF v_vendor_count < 2 THEN
         RAISE EXCEPTION 'Insufficient vendors loaded (expected >= 2, got %)', v_vendor_count;
     END IF;
@@ -89,7 +89,7 @@ BEGIN
         RAISE EXCEPTION 'Insufficient payment types loaded (expected >= 6, got %)', v_payment_count;
     END IF;
 
-    -- dim_date sera remplie après fact_trip, pas de vérification ici
+    -- dim_date is populated after fact_trip, no check needed here 
     IF v_date_count > 0 THEN
         RAISE NOTICE 'dim_date already has % rows', v_date_count;
     END IF;

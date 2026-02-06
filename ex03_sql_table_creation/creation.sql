@@ -1,14 +1,14 @@
 -- ============================================================================
 --  Data Warehouse NYC Taxi - creation.sql
---  Modèle en constellation avec 4 tables de faits
---  SGBD : PostgreSQL
+--  Constellation Schema with 4 Fact Tables
+--  DBMS : PostgreSQL
 -- ============================================================================
 
 CREATE SCHEMA IF NOT EXISTS dw;
 SET search_path TO dw;
 
 -- ============================================================================
---  0) Nettoyage préalable : DROP TABLES dans le bon ordre
+--  0) Pre-cleanup: DROP TABLES in correct order
 -- ============================================================================
 
 DROP TABLE IF EXISTS fact_daily_dropoff_zone;
@@ -26,20 +26,20 @@ DROP TABLE IF EXISTS dim_date;
 --  1) DIMENSIONS
 -- ============================================================================
 
--- 1.1 dim_date : 1 ligne = 1 jour
+-- 1.1 dim_date : 1 row = 1 day
 CREATE TABLE dim_date (
                           date_id        INTEGER PRIMARY KEY,   -- ex: 20250901
                           full_date      DATE NOT NULL,
                           year           INTEGER NOT NULL,
                           month          INTEGER NOT NULL,
                           day            INTEGER NOT NULL,
-                          day_of_week    INTEGER NOT NULL,      -- 1 = lundi (ISO)
+                          day_of_week    INTEGER NOT NULL,      -- 1 = monday (ISO)
                           day_name       VARCHAR(20),
                           month_name     VARCHAR(20),
                           is_weekend     BOOLEAN
 );
 
--- 1.2 dim_location : 1 ligne = 1 zone TLC
+-- 1.2 dim_location : 1 row = 1 TLC zone
 CREATE TABLE dim_location (
                               location_id   INTEGER PRIMARY KEY,     -- = PULocationID / DOLocationID
                               borough       VARCHAR(50),
@@ -66,29 +66,29 @@ CREATE TABLE dim_payment_type (
 );
 
 -- ============================================================================
---  2) FACT PRINCIPALE : fact_trip (grain = 1 course)
+--  2) MAIN FACT TABLE : fact_trip (grain = 1 trip)
 -- ============================================================================
 
 CREATE TABLE fact_trip (
                            trip_id              BIGSERIAL PRIMARY KEY,
 
-    -- Clés étrangères vers les dimensions
-                           date_id              INTEGER NOT NULL,  -- FK ajoutée après insertion de dim_date
+    -- Foreign Keys to Dimensions
+                           date_id              INTEGER NOT NULL,  -- Logically linked to dim_date
                            vendor_id            INTEGER NOT NULL REFERENCES dim_vendor(vendor_id),
                            ratecode_id          INTEGER REFERENCES dim_ratecode(ratecode_id),
                            payment_type_id      INTEGER REFERENCES dim_payment_type(payment_type_id),
                            pickup_location_id   INTEGER REFERENCES dim_location(location_id),
                            dropoff_location_id  INTEGER REFERENCES dim_location(location_id),
 
-    -- Timestamps détaillés
+    -- Detailed timestamps 
                            tpep_pickup_datetime   TIMESTAMP NOT NULL,
                            tpep_dropoff_datetime  TIMESTAMP NOT NULL,
 
-    -- Attributs simples
+    -- Simple Attributes
                            passenger_count        INTEGER NOT NULL,
                            store_and_fwd_flag     CHAR(1),
 
-    -- Mesures de la course
+    -- Trip Metrics
                            trip_distance          DOUBLE PRECISION,
                            fare_amount            DOUBLE PRECISION,
                            extra                  DOUBLE PRECISION,
@@ -101,12 +101,12 @@ CREATE TABLE fact_trip (
                            cbd_congestion_fee     DOUBLE PRECISION,
                            total_amount           DOUBLE PRECISION,
 
-    -- Mesures dérivées
+    -- Derived Metrics
                            trip_duration_minutes  DOUBLE PRECISION,
                            avg_speed_mph          DOUBLE PRECISION,
                            tip_ratio              DOUBLE PRECISION,
 
-    -- Flag qualité
+    -- Quality Flags
                            is_outlier             BOOLEAN DEFAULT FALSE,
                             outlier_reason         VARCHAR(255)
 );
@@ -139,7 +139,7 @@ CREATE TABLE fact_vendor_daily (
 );
 
 -- ============================================================================
---  4) FACT AGRÉGÉE : fact_daily_pickup_zone (1 jour x 1 zone de pickup)
+--  4) AGGREGATED FACT: fact_daily_pickup_zone (1 day x 1 pickup zone)
 -- ============================================================================
 
 CREATE TABLE fact_daily_pickup_zone (
@@ -160,7 +160,7 @@ CREATE TABLE fact_daily_pickup_zone (
 );
 
 -- ============================================================================
---  5) FACT AGRÉGÉE : fact_daily_dropoff_zone (1 jour x 1 zone de dropoff)
+--  5) AGGREGATED FACT: fact_daily_dropoff_zone (1 day x 1 dropoff zone)
 -- ============================================================================
 
 CREATE TABLE fact_daily_dropoff_zone (
@@ -181,6 +181,6 @@ CREATE TABLE fact_daily_dropoff_zone (
 );
 
 -- ============================================================================
---  Fin de creation.sql
+--  Enf of creation.sql
 -- ============================================================================
 

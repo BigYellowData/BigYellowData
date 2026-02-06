@@ -1,16 +1,16 @@
 -- ============================================================================
 --  aggregation.sql
---  Population des tables de faits agrégées depuis fact_trip
---  Ces tables optimisent les requêtes analytiques pré-calculées
+--  Populating Aggregated Fact Tables from fact_trip 
+--  These tables optimize analytical queries by pre-calculating 
 -- ============================================================================
 
 SET search_path TO dw;
 
 -- ============================================================================
---  1) fact_vendor_daily : Agrégation par vendeur et par jour
+--  1) fact_vendor_daily : Aggregation by Vendor and Date
 -- ============================================================================
 
--- Vider la table avant réinsertion (idempotence)
+-- Clear table before re-insertion (idempotency)
 TRUNCATE TABLE fact_vendor_daily;
 
 INSERT INTO fact_vendor_daily (
@@ -37,12 +37,12 @@ SELECT
     AVG(ft.tip_amount) AS avg_tip_amount,
     AVG(ft.tip_ratio) AS avg_tip_ratio
 FROM fact_trip ft
-WHERE ft.is_outlier = FALSE  -- Exclure les outliers des agrégations
+WHERE ft.is_outlier = FALSE  -- Exclude outliers from agregations
 GROUP BY ft.date_id, ft.vendor_id
 ORDER BY ft.date_id, ft.vendor_id;
 
 -- ============================================================================
---  2) fact_daily_pickup_zone : Agrégation par jour et zone de pickup
+--  2) fact_daily_pickup_zone : Aggregation by Date and Pickup Zone
 -- ============================================================================
 
 TRUNCATE TABLE fact_daily_pickup_zone;
@@ -77,7 +77,7 @@ GROUP BY ft.date_id, ft.pickup_location_id
 ORDER BY ft.date_id, ft.pickup_location_id;
 
 -- ============================================================================
---  3) fact_daily_dropoff_zone : Agrégation par jour et zone de dropoff
+--  3) fact_daily_dropoff_zone : Aggregation by Date and Dropoff Zone
 -- ============================================================================
 
 TRUNCATE TABLE fact_daily_dropoff_zone;
@@ -112,7 +112,7 @@ GROUP BY ft.date_id, ft.dropoff_location_id
 ORDER BY ft.date_id, ft.dropoff_location_id;
 
 -- ============================================================================
---  4) Vérification des agrégations
+--  4) Aggregation Verification 
 -- ============================================================================
 
 DO $$
@@ -126,16 +126,16 @@ DECLARE
     v_pickup_zone_trips BIGINT;
     v_dropoff_zone_trips BIGINT;
 BEGIN
-    -- Comptage des courses
+    -- Raw rows count       
     SELECT COUNT(*) INTO v_fact_trip_count FROM fact_trip;
     SELECT COUNT(*) INTO v_fact_trip_clean_count FROM fact_trip WHERE is_outlier = FALSE;
 
-    -- Comptage des lignes agrégées
+    -- Aggregated rows count        
     SELECT COUNT(*) INTO v_vendor_daily_count FROM fact_vendor_daily;
     SELECT COUNT(*) INTO v_pickup_zone_count FROM fact_daily_pickup_zone;
     SELECT COUNT(*) INTO v_dropoff_zone_count FROM fact_daily_dropoff_zone;
 
-    -- Comptage des trips dans les agrégations
+    -- Counting trips from aggregated tables      
     SELECT SUM(trips_count) INTO v_vendor_daily_trips FROM fact_vendor_daily;
     SELECT SUM(trips_count) INTO v_pickup_zone_trips FROM fact_daily_pickup_zone;
     SELECT SUM(trips_count) INTO v_dropoff_zone_trips FROM fact_daily_dropoff_zone;
@@ -151,7 +151,7 @@ BEGIN
     RAISE NOTICE 'fact_daily_dropoff_zone:  % rows (% trips)', v_dropoff_zone_count, v_dropoff_zone_trips;
     RAISE NOTICE '========================================';
 
-    -- Vérification de cohérence
+    -- Integrity Checks
     IF v_vendor_daily_trips != v_fact_trip_clean_count THEN
         RAISE WARNING 'Mismatch in vendor_daily aggregation: expected %, got %',
             v_fact_trip_clean_count, v_vendor_daily_trips;
@@ -172,10 +172,10 @@ BEGIN
 END $$;
 
 -- ============================================================================
---  5) Exemples de requêtes analytiques sur les tables agrégées
+--  5) Sample Analytical Queries on Aggregated Tables
 -- ============================================================================
 
--- Top 10 vendors par revenu total
+-- Top 10 vendors by Total Revenue
 -- SELECT
 --     v.vendor_name,
 --     SUM(fvd.total_total_amount) AS total_revenue,
@@ -187,7 +187,7 @@ END $$;
 -- ORDER BY total_revenue DESC
 -- LIMIT 10;
 
--- Top 10 zones de pickup par nombre de courses
+-- Top 10 pickup zones by Trip Count
 -- SELECT
 --     dl.borough,
 --     dl.zone,
@@ -200,7 +200,7 @@ END $$;
 -- ORDER BY total_trips DESC
 -- LIMIT 10;
 
--- Evolution journalière des courses (séries temporelles)
+-- Daily Trip Evolution (Time Series Analysis)
 -- SELECT
 --     dd.full_date,
 --     dd.day_name,
@@ -214,5 +214,5 @@ END $$;
 -- ORDER BY dd.full_date;
 
 -- ============================================================================
---  Fin de aggregation.sql
+--  End de aggregation.sql
 -- ============================================================================
