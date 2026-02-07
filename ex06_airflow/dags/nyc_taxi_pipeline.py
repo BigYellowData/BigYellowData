@@ -1,5 +1,5 @@
 """
-NYC Taxi Data Pipeline DAG
+NYC Taxi Data Pipeline DAG (Exercise 6)
 
 This DAG orchestrates the complete BigYellowData pipeline:
 1. Ex01: Data Retrieval - Download NYC taxi data from TLC to MinIO
@@ -11,7 +11,8 @@ Prerequisites:
 - All Spark JARs must be pre-built on the host machine
 - Run: ./setup_and_run.sh all (or individual exercises)
 
-Author: BigYellowData Team
+@author BigYellowData Team
+@version 1.0
 """
 
 from datetime import datetime, timedelta
@@ -30,6 +31,10 @@ default_args = {
     'retries': 2,
     'retry_delay': timedelta(minutes=2),
 }
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
 
 # Container names
 SPARK_MASTER = 'spark-master'

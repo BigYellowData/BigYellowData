@@ -1,7 +1,14 @@
 #!/bin/bash
-# Script to run BigYellowData exercises from Airflow
-# This script is executed inside the Airflow container and uses docker exec
-# to interact with other containers
+# =============================================================================
+# BigYellowData Airflow Execution Wrapper
+#
+# This script serves as the interface between the Airflow DAGs and the 
+# underlying Docker infrastructure. Since Airflow runs in its own container,
+# it uses 'docker exec' to trigger commands on the specialized worker 
+# containers (Spark Master, PostgreSQL).
+#
+# @author BigYellowData Team
+# =============================================================================
 
 set -e
 
