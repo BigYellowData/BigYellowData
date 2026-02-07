@@ -6,6 +6,21 @@ from plotly.subplots import make_subplots
 from sqlalchemy import create_engine
 from datetime import datetime
 
+"""
+Exercise 4: Data Visualization & Dashboarding.
+
+This Streamlit application serves as the frontend analytics layer for the NYC Taxi Data Project.
+It connects directly to the Data Warehouse (PostgreSQL) to provide interactive visualizations,
+KPI tracking, and deep-dive analysis into traffic patterns, revenue, and data quality (outliers).
+
+Key Features:
+- Real-time connection to the Fact/Dimension tables.
+- Interactive geographic and temporal analysis using Plotly.
+- Dedicated module for outlier detection and quality assessment.
+
+@author BigYellowData Team
+@version 1.0
+"""
 # =============================================================================
 # Configuration
 # =============================================================================
