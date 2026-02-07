@@ -52,12 +52,12 @@ def get_db_connection():
     return engine
 
 # =============================================================================
-# Fonctions de chargement des données
+# Data Loading Functions
 # =============================================================================
 
 @st.cache_data(ttl=300)
 def load_kpis():
-    """Charger les KPIs principaux"""
+    """Load Key Performance Indicators"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -76,7 +76,7 @@ def load_kpis():
 
 @st.cache_data(ttl=300)
 def load_daily_trips():
-    """Charger les courses journalières"""
+    """Load daily trip"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -95,7 +95,7 @@ def load_daily_trips():
 
 @st.cache_data(ttl=300)
 def load_vendor_stats():
-    """Charger les statistiques par vendeur"""
+    """Load statistics by Vendor"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -113,7 +113,7 @@ def load_vendor_stats():
 
 @st.cache_data(ttl=300)
 def load_top_pickup_zones(limit=15):
-    """Charger les zones de prise en charge les plus fréquentes"""
+    """Load top Pickup Zones"""
     engine = get_db_connection()
     query = f"""
     SELECT
@@ -132,7 +132,7 @@ def load_top_pickup_zones(limit=15):
 
 @st.cache_data(ttl=300)
 def load_top_dropoff_zones(limit=15):
-    """Charger les zones de dépose les plus fréquentes"""
+    """Load top Dropoff Zones"""
     engine = get_db_connection()
     query = f"""
     SELECT
@@ -150,7 +150,7 @@ def load_top_dropoff_zones(limit=15):
 
 @st.cache_data(ttl=300)
 def load_borough_stats():
-    """Charger les statistiques par arrondissement"""
+    """Load statistics by Borough"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -168,7 +168,7 @@ def load_borough_stats():
 
 @st.cache_data(ttl=300)
 def load_payment_stats():
-    """Charger les statistiques par type de paiement"""
+    """Load statistics by Payment Type"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -186,7 +186,7 @@ def load_payment_stats():
 
 @st.cache_data(ttl=300)
 def load_hourly_distribution():
-    """Charger la distribution horaire des courses"""
+    """Load hourly trip distribution"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -203,7 +203,7 @@ def load_hourly_distribution():
 
 @st.cache_data(ttl=300)
 def load_weekday_stats():
-    """Charger les statistiques par jour de la semaine"""
+    """Load statistics by Day of Week"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -221,7 +221,7 @@ def load_weekday_stats():
 
 @st.cache_data(ttl=300)
 def load_date_range():
-    """Charger la plage de dates des données"""
+    """Load data date range"""
     engine = get_db_connection()
     query = """
     SELECT MIN(full_date) as min_date, MAX(full_date) as max_date
@@ -231,7 +231,7 @@ def load_date_range():
 
 @st.cache_data(ttl=300)
 def load_ratecode_stats():
-    """Charger les statistiques par code tarifaire"""
+    """Load statistics by Rate Code"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -250,7 +250,7 @@ def load_ratecode_stats():
 
 @st.cache_data(ttl=300)
 def load_distance_distribution():
-    """Charger la distribution des distances"""
+    """Load trip distance distribution"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -281,7 +281,7 @@ def load_distance_distribution():
 
 @st.cache_data(ttl=300)
 def load_fare_distribution():
-    """Charger la distribution des tarifs"""
+    """Load trip fare distribution"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -310,12 +310,12 @@ def load_fare_distribution():
     return pd.read_sql(query, engine)
 
 # =============================================================================
-# Fonctions d'analyse des outliers
+# Outlier Analysis Functions
 # =============================================================================
 
 @st.cache_data(ttl=300)
 def load_outlier_summary():
-    """Charger le résumé des outliers par raison"""
+    """Load outlier summary by reason"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -334,7 +334,7 @@ def load_outlier_summary():
 
 @st.cache_data(ttl=300)
 def load_outlier_samples(reason=None, limit=100):
-    """Charger les échantillons d'outliers avec détail complet des prix"""
+    """Load outlier samples with full price breakdown"""
     engine = get_db_connection()
     where_clause = "WHERE is_outlier = TRUE"
     if reason and reason != "Tous":
@@ -375,7 +375,7 @@ def load_outlier_samples(reason=None, limit=100):
 
 @st.cache_data(ttl=300)
 def load_outlier_vs_normal_comparison():
-    """Comparer outliers vs courses normales"""
+    """Compare Outliers vs Normal Trips"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -394,7 +394,7 @@ def load_outlier_vs_normal_comparison():
 
 @st.cache_data(ttl=300)
 def load_outlier_by_hour():
-    """Charger la distribution des outliers par heure"""
+    """Load Outlier distribution by hour"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -410,7 +410,7 @@ def load_outlier_by_hour():
 
 @st.cache_data(ttl=300)
 def load_outlier_by_vendor():
-    """Charger la distribution des outliers par vendeur"""
+    """Load Outlier distribution by Vendor"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -427,7 +427,7 @@ def load_outlier_by_vendor():
 
 @st.cache_data(ttl=300)
 def load_extreme_values():
-    """Charger les valeurs extrêmes"""
+    """Load Extreme Values"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -464,7 +464,7 @@ def load_extreme_values():
 
 @st.cache_data(ttl=300)
 def load_top_routes():
-    """Charger les trajets les plus fréquents"""
+    """Load most frequent Routes"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -485,7 +485,7 @@ def load_top_routes():
 
 @st.cache_data(ttl=300)
 def load_passenger_stats():
-    """Charger les statistiques par nombre de passagers"""
+    """Load statistics by Passenger Count"""
     engine = get_db_connection()
     query = """
     SELECT
@@ -501,7 +501,7 @@ def load_passenger_stats():
     return pd.read_sql(query, engine)
 
 # =============================================================================
-# Traduction des jours de la semaine
+# WEEKDAY TRANSLATION
 # =============================================================================
 DAY_TRANSLATION = {
     'Monday': 'Lundi',
@@ -514,38 +514,38 @@ DAY_TRANSLATION = {
 }
 
 def translate_day(day_name):
-    """Traduire le nom du jour en français"""
+    """Translate in french the name of days"""
     return DAY_TRANSLATION.get(day_name.strip(), day_name)
 
 # =============================================================================
-# Mise en page du Dashboard
+# Dashboard Layout Functions
 # =============================================================================
 
 def render_overview_tab():
-    """Afficher l'onglet Vue d'ensemble"""
-    st.header("Indicateurs Clés de Performance")
+    """Render Overview Tab"""
+    st.header("Key Performance Indicators")
 
     kpis = load_kpis()
 
     col1, col2, col3, col4, col5, col6 = st.columns(6)
 
     with col1:
-        st.metric("Total Courses", f"{kpis['total_trips']:,.0f}")
+        st.metric("Total Trips", f"{kpis['total_trips']:,.0f}")
     with col2:
-        st.metric("Revenu Total", f"{kpis['total_revenue']:,.0f}$")
+        st.metric("Total Revenue", f"{kpis['total_revenue']:,.0f}$")
     with col3:
-        st.metric("Tarif Moyen", f"{kpis['avg_fare']:.2f}$")
+        st.metric("Average Fare", f"{kpis['avg_fare']:.2f}$")
     with col4:
-        st.metric("Distance Moy.", f"{kpis['avg_distance']*1.6:.1f} km")
+        st.metric("Average Distance", f"{kpis['avg_distance']*1.6:.1f} km")
     with col5:
-        st.metric("Durée Moy.", f"{kpis['avg_duration']:.1f} min")
+        st.metric("Average Duration", f"{kpis['avg_duration']:.1f} min")
     with col6:
-        st.metric("Pourboire Moy.", f"{kpis['avg_tip_pct']:.1f}%")
+        st.metric("Average Tip %", f"{kpis['avg_tip_pct']:.1f}%")
 
     st.divider()
 
-    # Tendances journalières
-    st.subheader("Tendances Journalières")
+    # Daily Trends
+    st.subheader("Daily Trends")
     daily_data = load_daily_trips()
 
     col1, col2 = st.columns(2)
@@ -553,8 +553,8 @@ def render_overview_tab():
     with col1:
         fig_trips = px.line(
             daily_data, x='full_date', y='trips',
-            title='Nombre de Courses par Jour',
-            labels={'full_date': 'Date', 'trips': 'Courses'}
+            title='Daily Trip Count',
+            labels={'full_date': 'Date', 'trips': 'Trips'}
         )
         fig_trips.update_traces(line_color='#FFD700')
         fig_trips.update_layout(height=350)
@@ -563,16 +563,16 @@ def render_overview_tab():
     with col2:
         fig_revenue = px.line(
             daily_data, x='full_date', y='revenue',
-            title='Revenu Journalier',
-            labels={'full_date': 'Date', 'revenue': 'Revenu ($)'}
+            title='Daily Revenue',
+            labels={'full_date': 'Date', 'revenue': 'Revenue ($)'}
         )
         fig_revenue.update_traces(line_color='#32CD32')
         fig_revenue.update_layout(height=350)
         st.plotly_chart(fig_revenue, use_container_width=True)
 
-    # Résumé qualité des données
+    # Data Quality Summary
     st.divider()
-    st.subheader("Qualité des Données")
+    st.subheader("Data Quality")
 
     col1, col2, col3 = st.columns(3)
     total = kpis['total_trips']
@@ -580,44 +580,44 @@ def render_overview_tab():
     outliers = kpis['outlier_count']
 
     with col1:
-        st.metric("Données Valides", f"{clean:,.0f}", f"{clean/total*100:.1f}%")
+        st.metric("Valid Data", f"{clean:,.0f}", f"{clean/total*100:.1f}%")
     with col2:
-        st.metric("Outliers Détectés", f"{outliers:,.0f}", f"{outliers/total*100:.1f}%")
+        st.metric("Outliers Detected", f"{outliers:,.0f}", f"{outliers/total*100:.1f}%")
     with col3:
-        st.metric("Score Qualité", f"{clean/total*100:.1f}%")
+        st.metric("Quality Score", f"{clean/total*100:.1f}%")
 
 
 def render_geographic_tab():
-    """Afficher l'onglet Analyse Géographique"""
-    st.header("Analyse Géographique")
+    """Render Geographic Analysis Tab"""
+    st.header("Geographic Analysis")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Zones de Prise en Charge")
+        st.subheader("Top Pickup Zones")
         pickup_data = load_top_pickup_zones()
         fig_pickup = px.bar(
             pickup_data.head(10), x='trips', y='zone',
-            orientation='h', title='Top 10 Zones de Départ',
+            orientation='h', title='Top 10 Pickup Zones',
             color='trips', color_continuous_scale='YlOrRd'
         )
         fig_pickup.update_layout(height=400, yaxis={'categoryorder': 'total ascending'})
         st.plotly_chart(fig_pickup, use_container_width=True)
 
     with col2:
-        st.subheader("Zones de Dépose")
+        st.subheader("Top Dropoff Zones")
         dropoff_data = load_top_dropoff_zones()
         fig_dropoff = px.bar(
             dropoff_data.head(10), x='trips', y='zone',
-            orientation='h', title='Top 10 Zones d\'Arrivée',
+            orientation='h', title='Top 10 Dropoff Zones',
             color='trips', color_continuous_scale='Greens'
         )
         fig_dropoff.update_layout(height=400, yaxis={'categoryorder': 'total ascending'})
         st.plotly_chart(fig_dropoff, use_container_width=True)
 
-    # Analyse par arrondissement
+    # Borough Analysis
     st.divider()
-    st.subheader("Analyse par Arrondissement")
+    st.subheader("Borough Analysis")
 
     borough_data = load_borough_stats()
 
@@ -626,7 +626,7 @@ def render_geographic_tab():
     with col1:
         fig_borough_trips = px.pie(
             borough_data, values='trips', names='borough',
-            title='Courses par Arrondissement',
+            title='Trips by Borough',
             color_discrete_sequence=px.colors.sequential.YlOrRd
         )
         st.plotly_chart(fig_borough_trips, use_container_width=True)
@@ -634,31 +634,31 @@ def render_geographic_tab():
     with col2:
         fig_borough_rev = px.bar(
             borough_data, x='borough', y='revenue',
-            title='Revenu par Arrondissement',
+            title='Revenue by Borough',
             color='avg_fare', color_continuous_scale='Greens',
-            labels={'borough': 'Arrondissement', 'revenue': 'Revenu ($)', 'avg_fare': 'Tarif moy.'}
+            labels={'borough': 'Borough', 'revenue': 'Revenue ($)', 'avg_fare': 'Average Fare'}
         )
         st.plotly_chart(fig_borough_rev, use_container_width=True)
 
-    # Trajets les plus fréquents
+    # Top Routes
     st.divider()
-    st.subheader("Trajets les Plus Fréquents")
+    st.subheader("Most Frequent Routes")
     routes = load_top_routes()
     routes['route'] = routes['pickup_zone'] + ' → ' + routes['dropoff_zone']
 
     fig_routes = px.bar(
         routes.head(15), x='trips', y='route',
-        orientation='h', title='Top 15 Trajets par Nombre de Courses',
+        orientation='h', title='Top 15 Routes by Trip Count',
         color='avg_fare', color_continuous_scale='Viridis',
-        labels={'trips': 'Courses', 'route': 'Trajet', 'avg_fare': 'Tarif moy.'}
+        labels={'trips': 'Courses', 'route': 'Route', 'avg_fare': 'Average Fare'}
     )
     fig_routes.update_layout(height=500, yaxis={'categoryorder': 'total ascending'})
     st.plotly_chart(fig_routes, use_container_width=True)
 
 
 def render_time_tab():
-    """Afficher l'onglet Analyse Temporelle"""
-    st.header("Analyse Temporelle")
+    """Render Temporal Analysis Tab"""
+    st.header("Temporal Analysis")
 
     col1, col2 = st.columns(2)
 
@@ -666,37 +666,37 @@ def render_time_tab():
         hourly_data = load_hourly_distribution()
         fig_hourly = px.bar(
             hourly_data, x='hour', y='trips',
-            title='Courses par Heure de la Journée',
+            title='Trips by Hour of Day',
             color='avg_fare', color_continuous_scale='YlOrRd',
-            labels={'hour': 'Heure', 'trips': 'Courses', 'avg_fare': 'Tarif moy.'}
+            labels={'hour': 'Hour', 'trips': 'Trips', 'avg_fare': 'Average Fare'}
         )
         fig_hourly.update_layout(height=400)
         st.plotly_chart(fig_hourly, use_container_width=True)
 
     with col2:
         weekday_data = load_weekday_stats()
-        weekday_data['jour'] = weekday_data['day_name'].apply(translate_day)
+        # weekday_data['jour'] = weekday_data['day_name'].apply(translate_day)
         fig_weekday = px.bar(
-            weekday_data, x='jour', y='trips',
-            title='Courses par Jour de la Semaine',
+            weekday_data, x='day_name', y='trips',
+            title='Trips by Day of Week',
             color='revenue', color_continuous_scale='Greens',
-            labels={'jour': 'Jour', 'trips': 'Courses', 'revenue': 'Revenu'}
+            labels={'day_name': 'Day of Week', 'trips': 'Trips', 'revenue': 'Revenue'}
         )
         fig_weekday.update_layout(height=400)
         st.plotly_chart(fig_weekday, use_container_width=True)
 
-    # Détails horaires
+    # Hourly Details
     st.divider()
-    st.subheader("Détails Horaires")
+    st.subheader("Hourly Details")
 
     col1, col2 = st.columns(2)
 
     with col1:
         fig_hourly_fare = px.line(
             hourly_data, x='hour', y='avg_fare',
-            title='Tarif Moyen par Heure',
+            title='Average Fare by Hour',
             markers=True,
-            labels={'hour': 'Heure', 'avg_fare': 'Tarif moyen ($)'}
+            labels={'hour': 'Hour', 'avg_fare': 'Average Fare ($)'}
         )
         fig_hourly_fare.update_traces(line_color='#FFD700')
         st.plotly_chart(fig_hourly_fare, use_container_width=True)
@@ -704,17 +704,17 @@ def render_time_tab():
     with col2:
         fig_hourly_duration = px.line(
             hourly_data, x='hour', y='avg_duration',
-            title='Durée Moyenne par Heure',
+            title='Average Duration by Hour',
             markers=True,
-            labels={'hour': 'Heure', 'avg_duration': 'Durée moyenne (min)'}
+            labels={'hour': 'Hour', 'avg_duration': 'Average Duration (min)'}
         )
         fig_hourly_duration.update_traces(line_color='#32CD32')
         st.plotly_chart(fig_hourly_duration, use_container_width=True)
 
 
 def render_vendors_tab():
-    """Afficher l'onglet Vendeurs & Paiements"""
-    st.header("Analyse Vendeurs & Paiements")
+    """Render Vendors & Payments Tab"""
+    st.header("Vendors & Payments Analysis")
 
     col1, col2 = st.columns(2)
 
@@ -722,7 +722,7 @@ def render_vendors_tab():
         vendor_data = load_vendor_stats()
         fig_vendor = px.pie(
             vendor_data, values='trips', names='vendor_name',
-            title='Courses par Vendeur',
+            title='Trips by Vendor',
             color_discrete_sequence=px.colors.sequential.YlOrRd
         )
         fig_vendor.update_layout(height=400)
@@ -731,6 +731,7 @@ def render_vendors_tab():
     with col2:
         payment_data = load_payment_stats()
         # Traduire les types de paiement
+        """
         payment_translation = {
             'Credit card': 'Carte de crédit',
             'Cash': 'Espèces',
@@ -743,29 +744,30 @@ def render_vendors_tab():
         payment_data['type_paiement'] = payment_data['payment_type'].map(
             lambda x: payment_translation.get(x, x)
         )
+        """
         fig_payment = px.pie(
-            payment_data, values='trips', names='type_paiement',
-            title='Courses par Type de Paiement',
+            payment_data, values='trips', names='payment_type',
+            title='Trips by Payment Type',
             color_discrete_sequence=px.colors.sequential.Greens
         )
         fig_payment.update_layout(height=400)
         st.plotly_chart(fig_payment, use_container_width=True)
 
-    # Tableau de performance des vendeurs
+    # Vendor Performance Table
     st.divider()
-    st.subheader("Performance des Vendeurs")
+    st.subheader("Vendor Performance")
     vendor_display = vendor_data.copy()
     vendor_display['revenue'] = vendor_display['revenue'].apply(lambda x: f"{x:,.0f}$")
     vendor_display['avg_fare'] = vendor_display['avg_fare'].apply(lambda x: f"{x:.2f}$")
     vendor_display['avg_tip_pct'] = vendor_display['avg_tip_pct'].apply(lambda x: f"{x:.1f}%")
-    vendor_display.columns = ['Vendeur', 'Courses', 'Revenu', 'Tarif Moy.', 'Pourboire Moy.']
+    vendor_display.columns = ['Vendor', 'Trips', 'Revenue', 'Average Fare', 'Average Tip %']
     st.dataframe(vendor_display, use_container_width=True, hide_index=True)
 
-    # Analyse des codes tarifaires
+    # Rate Code Analysis
     st.divider()
-    st.subheader("Analyse des Codes Tarifaires")
+    st.subheader("Rate Code Analysis")
     ratecode_data = load_ratecode_stats()
-
+    """
     # Traduire les codes tarifaires
     ratecode_translation = {
         'Standard rate': 'Tarif standard',
@@ -779,28 +781,28 @@ def render_vendors_tab():
     ratecode_data['code_tarif'] = ratecode_data['ratecode'].map(
         lambda x: ratecode_translation.get(x, x)
     )
-
+    """
     fig_ratecode = px.bar(
-        ratecode_data, x='code_tarif', y='trips',
-        title='Courses par Code Tarifaire',
+        ratecode_data, x='ratecode', y='trips',
+        title='Trips by Rate Code',
         color='avg_fare', color_continuous_scale='Viridis',
-        labels={'code_tarif': 'Code Tarifaire', 'trips': 'Courses', 'avg_fare': 'Tarif moy.'}
+        labels={'ratecode': 'Rate Code', 'trips': 'Trips', 'avg_fare': 'Average Fare'}
     )
     st.plotly_chart(fig_ratecode, use_container_width=True)
 
-    # Tableau des codes tarifaires
+    # Rate Code Table
     ratecode_display = ratecode_data.copy()
     ratecode_display['avg_fare'] = ratecode_display['avg_fare'].apply(lambda x: f"{x:.2f}$")
     ratecode_display['avg_distance'] = ratecode_display['avg_distance'].apply(lambda x: f"{x*1.6:.1f} km")
     ratecode_display['avg_duration'] = ratecode_display['avg_duration'].apply(lambda x: f"{x:.1f} min")
-    ratecode_display = ratecode_display[['code_tarif', 'trips', 'avg_fare', 'avg_distance', 'avg_duration']]
-    ratecode_display.columns = ['Code Tarifaire', 'Courses', 'Tarif Moy.', 'Distance Moy.', 'Durée Moy.']
+    ratecode_display = ratecode_display[['ratecode', 'trips', 'avg_fare', 'avg_distance', 'avg_duration']]
+    ratecode_display.columns = ['Rate Code', 'Trips', 'Average Fare', 'Average Distance (km)', 'Average Duration (min)']
     st.dataframe(ratecode_display, use_container_width=True, hide_index=True)
 
 
 def render_distributions_tab():
-    """Afficher l'onglet Distributions"""
-    st.header("Distribution des Courses")
+    """Render Distributions Tab"""
+    st.header("Trip Distributions")
 
     col1, col2 = st.columns(2)
 
@@ -808,9 +810,9 @@ def render_distributions_tab():
         distance_data = load_distance_distribution()
         fig_distance = px.bar(
             distance_data, x='distance_range', y='trips',
-            title='Courses par Tranche de Distance',
+            title='Trips by Distance Range',
             color='avg_fare', color_continuous_scale='YlOrRd',
-            labels={'distance_range': 'Distance', 'trips': 'Courses', 'avg_fare': 'Tarif moy.'}
+            labels={'distance_range': 'Distance', 'trips': 'Trips', 'avg_fare': 'Average Fare'}
         )
         st.plotly_chart(fig_distance, use_container_width=True)
 
@@ -818,15 +820,15 @@ def render_distributions_tab():
         fare_data = load_fare_distribution()
         fig_fare = px.bar(
             fare_data, x='fare_range', y='trips',
-            title='Courses par Tranche de Tarif',
+            title='Trips by Fare Range',
             color='trips', color_continuous_scale='Greens',
-            labels={'fare_range': 'Tarif', 'trips': 'Courses'}
+            labels={'fare_range': 'Fare', 'trips': 'Trips'}
         )
         st.plotly_chart(fig_fare, use_container_width=True)
 
-    # Analyse par nombre de passagers
+    # Passenger Count Analysis
     st.divider()
-    st.subheader("Analyse par Nombre de Passagers")
+    st.subheader("Passenger Count Analysis")
 
     passenger_data = load_passenger_stats()
 
@@ -835,40 +837,40 @@ def render_distributions_tab():
     with col1:
         fig_passenger_trips = px.bar(
             passenger_data, x='passenger_count', y='trips',
-            title='Courses par Nombre de Passagers',
+            title='Trips by Passenger Count',
             color='avg_fare', color_continuous_scale='YlOrRd',
-            labels={'passenger_count': 'Passagers', 'trips': 'Courses', 'avg_fare': 'Tarif moy.'}
+            labels={'passenger_count': 'Passengers', 'trips': 'Trips', 'avg_fare': 'Average Fare'}
         )
         st.plotly_chart(fig_passenger_trips, use_container_width=True)
 
     with col2:
         fig_passenger_tip = px.bar(
             passenger_data, x='passenger_count', y='avg_tip_pct',
-            title='Pourboire Moyen par Nombre de Passagers',
+            title='Average Tip by Passenger Count',
             color='avg_tip_pct', color_continuous_scale='Greens',
-            labels={'passenger_count': 'Passagers', 'avg_tip_pct': 'Pourboire (%)'}
+            labels={'passenger_count': 'Passengers', 'avg_tip_pct': 'Average Tip (%)'}
         )
         st.plotly_chart(fig_passenger_tip, use_container_width=True)
 
 
 def render_outliers_tab():
-    """Afficher l'onglet Analyse des Outliers"""
-    st.header("Analyse des Outliers")
+    """Render Outlier Analysis Tab"""
+    st.header("Outlier Analysis")
 
     st.info("""
-    Cette section analyse les courses identifiées comme outliers. Celles-ci peuvent inclure :
-    - Courses extrêmement longues ou courtes
-    - Tarifs anormalement élevés ou bas
-    - Vitesses impossibles
-    - Erreurs de saisie de données
+    This section analyzes trips identified as outliers. These may include:
+    - Extremely long or short trips
+    - Abnormally high or low fares
+    - Impossible speeds
+    - Data entry errors
 
-    Examinez ces données pour déterminer s'il s'agit de véritables anomalies ou de problèmes de qualité des données.
+    Examine these records to determine if they are genuine anomalies or data quality issues.
     """)
 
-    # Comparaison globale
+    # Global Comparison
     comparison = load_outlier_vs_normal_comparison()
 
-    st.subheader("Comparaison Outliers vs Courses Normales")
+    st.subheader("Outliers vs Normal Trips Comparison")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -878,33 +880,33 @@ def render_outliers_tab():
     if outlier_row is not None and normal_row is not None:
         with col1:
             st.metric(
-                "Nombre d'Outliers",
+                "Number of Outliers",
                 f"{outlier_row['trips']:,.0f}",
                 f"{outlier_row['trips']/(outlier_row['trips']+normal_row['trips'])*100:.1f}% du total"
             )
         with col2:
             st.metric(
-                "Tarif Moy. (Outliers)",
+                "Average Fare (Outliers)",
                 f"{outlier_row['avg_fare']:.2f}$",
                 f"{outlier_row['avg_fare'] - normal_row['avg_fare']:+.2f}$ vs normal"
             )
         with col3:
             st.metric(
-                "Distance Moy. (Outliers)",
+                "Average Distance (Outliers)",
                 f"{outlier_row['avg_distance']*1.6:.1f} km",
                 f"{(outlier_row['avg_distance'] - normal_row['avg_distance'])*1.6:+.1f} km vs normal"
             )
         with col4:
             st.metric(
-                "Durée Moy. (Outliers)",
+                "Average Duration (Outliers)",
                 f"{outlier_row['avg_duration']:.1f} min",
                 f"{outlier_row['avg_duration'] - normal_row['avg_duration']:+.1f} min vs normal"
             )
 
     st.divider()
 
-    # Répartition des outliers par raison
-    st.subheader("Outliers par Raison")
+    # Distribution of Outliers by Reason
+    st.subheader("Outliers by Reason")
 
     outlier_summary = load_outlier_summary()
 
@@ -914,7 +916,7 @@ def render_outliers_tab():
         with col1:
             fig_reasons = px.pie(
                 outlier_summary, values='count', names='outlier_reason',
-                title='Répartition des Outliers par Raison',
+                title='Distribution of Outliers by Reason',
                 color_discrete_sequence=px.colors.sequential.Reds
             )
             st.plotly_chart(fig_reasons, use_container_width=True)
@@ -922,29 +924,29 @@ def render_outliers_tab():
         with col2:
             fig_reasons_bar = px.bar(
                 outlier_summary, x='outlier_reason', y='count',
-                title='Nombre d\'Outliers par Raison',
+                title='Number of Outliers by Reason',
                 color='avg_fare', color_continuous_scale='Reds',
-                labels={'outlier_reason': 'Raison', 'count': 'Nombre', 'avg_fare': 'Tarif moy.'}
+                labels={'outlier_reason': 'Reason', 'count': 'Count', 'avg_fare': 'Average Fare'}
             )
             fig_reasons_bar.update_layout(xaxis_tickangle=-45)
             st.plotly_chart(fig_reasons_bar, use_container_width=True)
 
-        # Tableau récapitulatif
-        st.subheader("Détails par Raison d'Outlier")
+        # Summary Table
+        st.subheader("Outlier Reason Details")
         summary_display = outlier_summary.copy()
         summary_display['avg_fare'] = summary_display['avg_fare'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "N/A")
         summary_display['avg_distance'] = summary_display['avg_distance'].apply(lambda x: f"{x*1.6:.1f} km" if pd.notna(x) else "N/A")
         summary_display['avg_duration'] = summary_display['avg_duration'].apply(lambda x: f"{x:.1f} min" if pd.notna(x) else "N/A")
         summary_display['avg_speed'] = summary_display['avg_speed'].apply(lambda x: f"{x*1.6:.1f} km/h" if pd.notna(x) else "N/A")
-        summary_display.columns = ['Raison', 'Nombre', 'Tarif Moy.', 'Distance Moy.', 'Durée Moy.', 'Vitesse Moy.']
+        summary_display.columns = ['Reason', 'Count', 'Average Fare', 'Average Distance', 'Average Duration', 'Average Speed']
         st.dataframe(summary_display, use_container_width=True, hide_index=True)
     else:
-        st.warning("Aucun outlier trouvé dans les données.")
+        st.warning("No outliers found in the data.")
 
     st.divider()
 
-    # Outliers par heure et vendeur
-    st.subheader("Patterns des Outliers")
+    # Outliers by Hour and Vendor
+    st.subheader("Outlier Patterns by Hour and Vendor")
 
     col1, col2 = st.columns(2)
 
@@ -952,9 +954,9 @@ def render_outliers_tab():
         hourly_outliers = load_outlier_by_hour()
         fig_hourly = px.bar(
             hourly_outliers, x='hour', y='outlier_pct',
-            title='Pourcentage d\'Outliers par Heure',
+            title='Percentage of Outliers by Hour',
             color='outlier_pct', color_continuous_scale='Reds',
-            labels={'hour': 'Heure', 'outlier_pct': 'Outliers (%)'}
+            labels={'hour': 'Hour', 'outlier_pct': 'Outliers (%)'}
         )
         fig_hourly.update_layout(yaxis_title="Outliers (%)")
         st.plotly_chart(fig_hourly, use_container_width=True)
@@ -963,17 +965,17 @@ def render_outliers_tab():
         vendor_outliers = load_outlier_by_vendor()
         fig_vendor = px.bar(
             vendor_outliers, x='vendor_name', y='outlier_pct',
-            title='Pourcentage d\'Outliers par Vendeur',
+            title='Percentage of Outliers by Vendor',
             color='outlier_pct', color_continuous_scale='Reds',
-            labels={'vendor_name': 'Vendeur', 'outlier_pct': 'Outliers (%)'}
+            labels={'vendor_name': 'Vendor', 'outlier_pct': 'Outliers (%)'}
         )
         fig_vendor.update_layout(xaxis_tickangle=-45, yaxis_title="Outliers (%)")
         st.plotly_chart(fig_vendor, use_container_width=True)
 
     st.divider()
 
-    # Valeurs extrêmes
-    st.subheader("Valeurs Extrêmes dans les Outliers")
+    # Extreme Values
+    st.subheader("Extreme Values in Outliers")
     extreme = load_extreme_values()
 
     cols = st.columns(5)
@@ -992,42 +994,42 @@ def render_outliers_tab():
 
     st.divider()
 
-    # Échantillons de courses outliers avec détail complet des prix
-    st.subheader("Échantillons de Courses Outliers - Détail Complet")
+    # Outlier Samples with Full Breakdown 
+    st.subheader("Outlier Samples - Full Breakdown")
 
-    # Filtre par raison
-    reasons = ["Tous"] + (outlier_summary['outlier_reason'].tolist() if not outlier_summary.empty else [])
-    selected_reason = st.selectbox("Filtrer par raison d'outlier :", reasons)
+    # Filter by Reason
+    reasons = ["All"] + (outlier_summary['outlier_reason'].tolist() if not outlier_summary.empty else [])
+    selected_reason = st.selectbox("Filter by outlier reason :", reasons)
 
-    sample_limit = st.slider("Nombre d'échantillons à afficher :", 10, 200, 50)
+    sample_limit = st.slider("Number of samples to display :", 10, 200, 50)
 
     samples = load_outlier_samples(
-        reason=selected_reason if selected_reason != "Tous" else None,
+        reason=selected_reason if selected_reason != "All" else None,
         limit=sample_limit
     )
 
     if not samples.empty:
-        # Informations sur la composition du prix
+        # Price Composition Info
         st.markdown("""
         **Composition du prix total :**
-        - **Tarif de base** : Prix de la course (distance + temps)
-        - **Extra** : Suppléments (nuit, heure de pointe)
-        - **MTA Tax** : Taxe MTA (0.50$)
-        - **Pourboire** : Pourboire du client
-        - **Péages** : Frais de péage
-        - **Surcharge amélioration** : Taxe d'amélioration (0.30$)
-        - **Surcharge congestion** : Taxe congestion zone Manhattan
-        - **Frais aéroport** : Supplément aéroport
-        - **CBD Congestion Fee** : Nouvelle taxe congestion CBD
+        - **Base Fare** : Trip cost (distance + time)
+        - **Extra** : Surcharges (night, rush hour)
+        - **MTA Tax** : MTA Tax (0.50$)
+        - **Tip** : Customer tip
+        - **Tolls** : Tolls amount
+        - **Improvement Surcharge** : Improvement surcharge (0.30$)
+        - **Congestion Surcharge** : Congestion surcharge in Manhattan zone
+        - **Airport Fee** : Airport fee supplement
+        - **CBD Congestion Fee** : New CBD congestion fee
         """)
 
-        # Afficher les détails complets
+        # Display Full Details
         st.markdown("---")
 
-        # Format pour affichage
+        # Format for Display
         samples_display = samples.copy()
 
-        # Colonnes d'information générale
+        # General Info Columns
         samples_display['Heure Départ'] = samples_display['tpep_pickup_datetime'].dt.strftime('%Y-%m-%d %H:%M')
         samples_display['Heure Arrivée'] = samples_display['tpep_dropoff_datetime'].dt.strftime('%Y-%m-%d %H:%M')
         samples_display['Distance (km)'] = samples_display['trip_distance'].apply(lambda x: f"{x*1.6:.2f}" if pd.notna(x) else "N/A")
@@ -1035,34 +1037,35 @@ def render_outliers_tab():
         samples_display['Vitesse (km/h)'] = samples_display['avg_speed_mph'].apply(lambda x: f"{x*1.6:.1f}" if pd.notna(x) else "N/A")
         samples_display['Passagers'] = samples_display['passenger_count']
 
-        # Colonnes de prix - formatées en dollars
+        # Price Columns - Formatted in Dollars
         samples_display['Tarif Base'] = samples_display['fare_amount'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
         samples_display['Extra'] = samples_display['extra'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
         samples_display['MTA Tax'] = samples_display['mta_tax'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
-        samples_display['Pourboire'] = samples_display['tip_amount'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
-        samples_display['Péages'] = samples_display['tolls_amount'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
-        samples_display['Surcharge Amél.'] = samples_display['improvement_surcharge'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
-        samples_display['Surcharge Cong.'] = samples_display['congestion_surcharge'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
-        samples_display['Frais Aéroport'] = samples_display['airport_fee'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
+        samples_display['Tip'] = samples_display['tip_amount'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
+        samples_display['Tolls'] = samples_display['tolls_amount'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
+        samples_display['Improvement Surcharge'] = samples_display['improvement_surcharge'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
+        samples_display['Congestion Surcharge'] = samples_display['congestion_surcharge'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
+        samples_display['Airport Fee'] = samples_display['airport_fee'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
         samples_display['CBD Fee'] = samples_display['cbd_congestion_fee'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
         samples_display['TOTAL'] = samples_display['total_amount'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "N/A")
 
-        # Autres colonnes
-        samples_display['Raison Outlier'] = samples_display['outlier_reason']
-        samples_display['Zone Départ'] = samples_display['pickup_zone']
-        samples_display['Zone Arrivée'] = samples_display['dropoff_zone']
-        samples_display['Paiement'] = samples_display['payment_type']
+        # Other Columns
+        samples_display['Outlier Reason'] = samples_display['outlier_reason']
+        samples_display['Pickup Zone'] = samples_display['pickup_zone']
+        samples_display['Dropoff Zone'] = samples_display['dropoff_zone']
+        samples_display['Payment'] = samples_display['payment_type']
 
-        # Sélectionner les colonnes à afficher
+        # Select Columns to Display
         display_cols = [
-            'trip_id', 'Heure Départ', 'Heure Arrivée', 'Zone Départ', 'Zone Arrivée',
-            'Distance (km)', 'Durée (min)', 'Vitesse (km/h)', 'Passagers', 'Paiement',
-            'Tarif Base', 'Extra', 'MTA Tax', 'Pourboire', 'Péages',
-            'Surcharge Amél.', 'Surcharge Cong.', 'Frais Aéroport', 'CBD Fee', 'TOTAL',
-            'Raison Outlier'
+            'trip_id', 'Pickup Time', 'Dropoff Time', 'Pickup Zone', 'Dropoff Zone',
+            'Distance (km)', 'Duration (min)', 'Speed (km/h)', 'Passengers', 'Payment',
+            'Base Fare', 'Extra', 'MTA Tax', 'Tip', 'Tolls',
+            'Improvement Surcharge', 'Congestion Surcharge', 'Airport Fee', 'CBD Fee', 'TOTAL',
+            'Outlier Reason'
         ]
 
         final_display = samples_display[display_cols].copy()
+        """
         final_display.columns = [
             'ID', 'Départ', 'Arrivée', 'Zone Départ', 'Zone Arrivée',
             'Distance', 'Durée', 'Vitesse', 'Pass.', 'Paiement',
@@ -1070,74 +1073,75 @@ def render_outliers_tab():
             'Amél.', 'Cong.', 'Aéro.', 'CBD', 'TOTAL',
             'Raison'
         ]
+        """
 
         st.dataframe(final_display, use_container_width=True, hide_index=True)
 
-        # Statistiques rapides sur les prix
-        st.subheader("Statistiques des Composantes de Prix (Outliers)")
+        # Quick Price Stats
+        st.subheader("Price Component Statistics (Outliers)")
 
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
             avg_base = samples['fare_amount'].mean()
-            st.metric("Tarif Base Moyen", f"{avg_base:.2f}$")
+            st.metric("Average Base Fare", f"{avg_base:.2f}$")
         with col2:
             avg_tip = samples['tip_amount'].mean()
-            st.metric("Pourboire Moyen", f"{avg_tip:.2f}$")
+            st.metric("Average Tip", f"{avg_tip:.2f}$")
         with col3:
             avg_tolls = samples['tolls_amount'].mean()
-            st.metric("Péages Moyens", f"{avg_tolls:.2f}$")
+            st.metric("Average Tolls", f"{avg_tolls:.2f}$")
         with col4:
             avg_total = samples['total_amount'].mean()
-            st.metric("Total Moyen", f"{avg_total:.2f}$")
+            st.metric("Average Total", f"{avg_total:.2f}$")
 
-        # Bouton de téléchargement
+        # Download Button
         csv = samples.to_csv(index=False)
         st.download_button(
-            label="Télécharger les Outliers (CSV)",
+            label="Download Outliers (CSV)",
             data=csv,
             file_name="outliers_details.csv",
             mime="text/csv"
         )
     else:
-        st.info("Aucun échantillon d'outlier trouvé pour les critères sélectionnés.")
+        st.info("No outlier samples found for the selected criteria.")
 
 
 def main():
-    # En-tête
-    st.markdown('<p class="main-header">🚕 Dashboard Taxi Jaune NYC</p>', unsafe_allow_html=True)
+    # Header
+    st.markdown('<p class="main-header">🚕 NYC Yellow Taxi Dashboard</p>', unsafe_allow_html=True)
 
-    # Charger la plage de dates
+    # Load Date Range
     try:
         date_range = load_date_range()
-        st.caption(f"Période des données : {date_range['min_date']} au {date_range['max_date']}")
+        st.caption(f"Data Period: {date_range['min_date']} au {date_range['max_date']}")
     except Exception as e:
-        st.error(f"Erreur de connexion à la base de données : {e}")
-        st.info("Assurez-vous que PostgreSQL est en cours d'exécution et que l'Ex03 a été exécuté.")
+        st.error(f"Database Connection Error: {e}")
+        st.info("Ensure PostgreSQL is running and Ex03 has been executed")
         return
 
-    # Barre latérale
-    st.sidebar.header("Contrôles du Dashboard")
-    st.sidebar.info("Analyse du Data Warehouse des Taxis Jaunes de NYC")
+    # Sidebar
+    st.sidebar.header("Dashboard Controls")
+    st.sidebar.info("NYC Yellow Taxi Data Warehouse Analysis")
 
-    if st.sidebar.button("🔄 Actualiser les Données"):
+    if st.sidebar.button("🔄 Refresh Data"):
         st.cache_data.clear()
         st.rerun()
 
     st.sidebar.divider()
-    st.sidebar.markdown("### Statistiques Rapides")
+    st.sidebar.markdown("### Quick Statistics")
     kpis = load_kpis()
-    st.sidebar.metric("Total Courses", f"{kpis['total_trips']:,.0f}")
-    st.sidebar.metric("Taux d'Outliers", f"{kpis['outlier_count']/kpis['total_trips']*100:.1f}%")
+    st.sidebar.metric("Total Trips", f"{kpis['total_trips']:,.0f}")
+    st.sidebar.metric("Outlier Rate", f"{kpis['outlier_count']/kpis['total_trips']*100:.1f}%")
 
-    # Onglets principaux
+    # Main Tabs
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📊 Vue d'ensemble",
-        "🗺️ Géographie",
-        "⏰ Temporel",
-        "🏢 Vendeurs & Paiements",
+        "📊 Overview",
+        "🗺️ Geographic",
+        "⏰ Temporal",
+        "🏢 Vendors & Payments",
         "📈 Distributions",
-        "⚠️ Analyse Outliers"
+        "⚠️ Outliers Analysis"
     ])
 
     with tab1:
@@ -1158,9 +1162,9 @@ def main():
     with tab6:
         render_outliers_tab()
 
-    # Pied de page
+    # Footer
     st.divider()
-    st.caption("Dashboard Data Warehouse Taxi Jaune NYC | Développé avec Streamlit")
+    st.caption("NYC Yellow Taxi Data Warehouse Dashboard | Powered by Streamlit")
 
 if __name__ == "__main__":
     main()
