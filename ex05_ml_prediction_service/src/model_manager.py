@@ -1,16 +1,11 @@
 import os
-from pathlib import Path
 import joblib
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 from sklearn.base import BaseEstimator
 
 MODEL_NAME = "taxi_price_model"
-
-# Determine paths relative to this file's location (ex05_ml_prediction_service)
-_module_dir = Path(__file__).resolve().parent.parent
-MODEL_SAVE_PATH = str(_module_dir / "models" / f"{MODEL_NAME}.joblib")
-MODELS_DIR = str(_module_dir / "models")
+MODEL_SAVE_PATH = f"models/{MODEL_NAME}.joblib"
 REQUIRED_COLUMNS = [
     'trip_distance',
     'pickup_location_id',
@@ -58,6 +53,6 @@ def save_model(model: BaseEstimator):
     model : sklearn.base.BaseEstimator
         The trained model object to be serialized.
     """
-    os.makedirs(MODELS_DIR, exist_ok=True)
+    os.makedirs("models", exist_ok=True)
     joblib.dump(model, MODEL_SAVE_PATH)
     print(f"Model saved to {MODEL_SAVE_PATH}")

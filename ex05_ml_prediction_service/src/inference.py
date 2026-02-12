@@ -1,14 +1,10 @@
 import os
-from pathlib import Path
 import joblib
 import pandas as pd
 from data_manager import prepare_data_inference
 
 MODEL_NAME = "taxi_price_model"
-
-# Determine the model path relative to this file's location
-_module_dir = Path(__file__).resolve().parent.parent
-MODEL_LOAD_PATH = str(_module_dir / "models" / f"{MODEL_NAME}.joblib")
+MODEL_LOAD_PATH = f"models/{MODEL_NAME}.joblib"
 
 
 def load_model(path: str = MODEL_LOAD_PATH):

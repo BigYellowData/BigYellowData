@@ -1,0 +1,1438 @@
+\documentclass[12pt,a4paper]{report}
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ============================================================================
+% CONFIGURATION
+% ============================================================================
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+% Chemin des images
+\graphicspath{{images/}}
+
+% Couleurs
+\definecolor{primarycolor}{RGB}{255, 215, 0}  % Jaune taxi
+\definecolor{secondarycolor}{RGB}{33, 37, 41}  % Gris foncé
+\definecolor{codebackground}{RGB}{245, 245, 245}
+\definecolor{codecomment}{RGB}{106, 153, 85}
+\definecolor{codekeyword}{RGB}{86, 156, 214}
+\definecolor{codestring}{RGB}{206, 145, 120}
+
+% Hyperref
+\hypersetup{
+    colorlinks=true,
+    linkcolor=secondarycolor,
+    urlcolor=blue,
+    citecolor=secondarycolor,
+    pdftitle={Rapport Technique - BigYellowData},
+    pdfauthor={BigYellowData Team}
+}
+
+% Headers et footers
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{BigYellowData}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Titres des chapitres
+\titleformat{\chapter}[display]
+    {\normalfont\huge\bfseries\color{secondarycolor}}
+    {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+% Configuration des listings
+\lstset{
+    backgroundcolor=\color{codebackground},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    commentstyle=\color{codecomment},
+    keywordstyle=\color{codekeyword}\bfseries,
+    stringstyle=\color{codestring},
+    numbers=left,
+    numbersep=5pt,
+    numberstyle=\tiny\color{gray},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{gray!30}
+}
+
+\lstdefinelanguage{Scala}{
+    morekeywords={abstract,case,catch,class,def,do,else,extends,false,final,finally,for,forSome,if,implicit,import,lazy,match,new,null,object,override,package,private,protected,return,sealed,super,this,throw,trait,try,true,type,val,var,while,with,yield},
+    sensitive=true,
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+}
+
+% ============================================================================
+% DOCUMENT
+% ============================================================================
+\begin{document}
+
+% ============================================================================
+% PAGE DE TITRE
+% ============================================================================
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+
+    {\Huge\bfseries\color{secondarycolor} Rapport Technique\par}
+    \vspace{1cm}
+
+    \begin{tikzpicture}
+        \fill[primarycolor] (0,0) rectangle (12,0.5);
+    \end{tikzpicture}
+
+    \vspace{1.5cm}
+
+    {\fontsize{40}{48}\selectfont\bfseries BigYellowData\par}
+
+    \vspace{1cm}
+
+    {\Large\itshape Pipeline de Data Engineering pour l'Analyse\\des Taxis Jaunes de New York\par}
+
+    \vspace{2cm}
+
+    \begin{tikzpicture}
+        \node[draw=primarycolor, line width=2pt, rounded corners=10pt, inner sep=20pt] {
+            \begin{minipage}{0.7\textwidth}
+                \centering
+                \large
+                \textbf{Technologies utilisées:}\\[10pt]
+                Apache Spark $\bullet$ PostgreSQL $\bullet$ MinIO\\
+                Streamlit $\bullet$ scikit-learn $\bullet$ Airflow\\
+                Docker $\bullet$ Python $\bullet$ Scala
+            \end{minipage}
+        };
+    \end{tikzpicture}
+
+    \vfill
+
+    {\large Version 1.0\par}
+    {\large Février 2026\par}
+
+\end{titlepage}
+
+% ============================================================================
+% TABLE DES MATIERES
+% ============================================================================
+\tableofcontents
+\newpage
+
+% ============================================================================
+% CHAPITRE 1 : INTRODUCTION
+% ============================================================================
+\chapter{Introduction}
+
+\section{Contexte du Projet}
+
+Le projet \textbf{BigYellowData} est une solution complète de data engineering qui implémente un pipeline ETL (Extract, Transform, Load) de bout en bout pour l'analyse des données des taxis jaunes de New York City. Ces données, fournies par la NYC Taxi and Limousine Commission (TLC), représentent des millions de courses de taxi avec des informations détaillées sur les trajets, les tarifs et les modes de paiement.
+
+\section{Objectifs}
+
+Les objectifs principaux du projet sont :
+
+\begin{itemize}[leftmargin=2cm]
+    \item Construire un \textbf{Data Lake} pour le stockage des données brutes
+    \item Implémenter un pipeline de \textbf{nettoyage et transformation} des données
+    \item Concevoir un \textbf{Data Warehouse} optimisé pour l'analyse OLAP
+    \item Développer un \textbf{dashboard interactif} pour la visualisation
+    \item Créer un \textbf{service de prédiction ML} pour estimer les prix des courses
+    \item Mettre en place une \textbf{orchestration automatisée} du pipeline
+\end{itemize}
+
+\section{Stack Technologique}
+
+\begin{table}[H]
+\centering
+\caption{Technologies utilisées par couche}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Couche} & \textbf{Technologies} \\
+\midrule
+Traitement Big Data & Apache Spark 3.5.5, Scala 2.13 \\
+Data Lake & MinIO (compatible S3), format Parquet \\
+Data Warehouse & PostgreSQL 15 \\
+Visualisation & Streamlit, Plotly \\
+Machine Learning & scikit-learn, Random Forest \\
+Orchestration & Apache Airflow \\
+Conteneurisation & Docker, Docker Compose \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================================
+% CHAPITRE 2 : ARCHITECTURE TECHNIQUE
+% ============================================================================
+\chapter{Architecture Technique}
+
+\section{Vue d'Ensemble}
+
+L'architecture du projet suit un modèle de pipeline de données moderne avec séparation claire des responsabilités entre les différentes couches.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=1.8cm,
+    box/.style={rectangle, draw=secondarycolor, fill=white, text width=2.8cm, text centered, minimum height=1.2cm, rounded corners=3pt, font=\small},
+    storage/.style={rectangle, draw=secondarycolor, fill=gray!10, text width=2.8cm, text centered, minimum height=1.2cm, rounded corners=3pt, font=\small},
+    app/.style={rectangle, draw=secondarycolor, fill=primarycolor!20, text width=2.8cm, text centered, minimum height=1.2cm, rounded corners=3pt, font=\small},
+    arrow/.style={->, thick, secondarycolor},
+    darrow/.style={->, thick, dashed, gray}
+]
+    % Ligne 1 : Source
+    \node[box, fill=primarycolor!30] (source) {NYC TLC\\Data Source};
+    \node[box, right of=source, xshift=2.5cm] (ex01) {Ex01\\Retrieval};
+
+    % Ligne 2 : Data Lake
+    \node[storage, below of=ex01] (minio_raw) {MinIO\\Raw (Bronze)};
+    \node[box, right of=minio_raw, xshift=2.5cm] (ex02) {Ex02\\Ingestion};
+    \node[storage, right of=ex02, xshift=2.5cm] (minio_refined) {MinIO\\Refined (Silver)};
+
+    % Ligne 3 : DWH et ML (consommateurs du Data Lake)
+    \node[box, below of=minio_refined, xshift=-2.5cm] (ex03) {Ex03\\SQL Tables};
+    \node[storage, below of=ex03] (postgres) {PostgreSQL\\DWH (Gold)};
+
+    % Applications
+    \node[app, left of=postgres, xshift=-2.5cm] (ex04) {Ex04\\Dashboard};
+    \node[app, right of=minio_refined, xshift=2.5cm, yshift=-1.8cm] (ex05) {Ex05\\ML Service};
+
+    % Airflow
+    \node[app, below of=source, yshift=-3.5cm] (ex06) {Ex06\\Airflow};
+
+    % Flèches principales
+    \draw[arrow] (source) -- (ex01);
+    \draw[arrow] (ex01) -- (minio_raw);
+    \draw[arrow] (minio_raw) -- (ex02);
+    \draw[arrow] (ex02) -- (minio_refined);
+    \draw[arrow] (minio_refined) -- (ex03);
+    \draw[arrow] (ex03) -- (postgres);
+    \draw[arrow] (postgres) -- (ex04);
+
+    % Ex05 lit depuis MinIO Refined (Data Lake Silver)
+    \draw[arrow] (minio_refined) -- (ex05);
+
+    % Airflow orchestre tout
+    \draw[darrow] (ex06) -- node[left, font=\tiny, text=gray] {orchestre} (ex01);
+    \draw[darrow] (ex06) |- (ex03);
+    \draw[darrow] (ex06) |- (ex05);
+
+\end{tikzpicture}%
+}
+\caption{Architecture globale du projet BigYellowData}
+\end{figure}
+
+\section{Flux de Données}
+
+Le flux de données suit une architecture Medallion en trois couches, hébergées sur deux systèmes de stockage distincts :
+
+\begin{enumerate}
+    \item \textbf{Couche Bronze (Raw)} -- MinIO : Données brutes en format Parquet (\texttt{nyc\_raw/}). Résultat de l'Ex01.
+    \item \textbf{Couche Silver (Refined)} -- MinIO : Données nettoyées, enrichies et partitionnées par date (\texttt{dwh/yellow\_taxi\_refined/}). Résultat de l'Ex02. C'est le \textbf{Data Lake} central du projet.
+    \item \textbf{Couche Gold (Aggregated)} -- PostgreSQL : Tables dimensionnelles et agrégées dans le Data Warehouse, optimisées pour l'analyse OLAP. Résultat de l'Ex03.
+\end{enumerate}
+
+\vspace{0.5cm}
+\noindent\textbf{Point important :} Le Data Lake MinIO (couche Silver) est le point de distribution central des données. Deux consommateurs y accèdent indépendamment :
+
+\begin{itemize}
+    \item \textbf{Ex03 (DWH)} : Lit les données Silver pour les charger dans PostgreSQL, à destination du dashboard (Ex04)
+    \item \textbf{Ex05 (ML)} : Lit directement les données Silver depuis MinIO pour entraîner le modèle de prédiction, \textit{sans dépendre de PostgreSQL}
+\end{itemize}
+
+Cette architecture permet d'exécuter l'Ex05 en parallèle de l'Ex03, puisqu'ils lisent tous deux depuis le même Data Lake sans dépendance entre eux.
+
+\section{Schéma de Réseau}
+
+Tous les services communiquent via un réseau Docker bridge nommé \texttt{spark-network}.
+
+\begin{table}[H]
+\centering
+\caption{Ports exposés par service}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Service} & \textbf{Port} & \textbf{Description} \\
+\midrule
+Spark Master UI & 8081 & Interface web Spark \\
+Spark Master & 7077 & Communication inter-nodes \\
+MinIO API & 9000 & API S3 compatible \\
+MinIO Console & 9001 & Interface d'administration \\
+PostgreSQL & 5432 & Base de données \\
+pgAdmin & 5050 & Administration PostgreSQL \\
+Dashboard & 8501 & Application Streamlit \\
+Airflow & 8082 & Interface Airflow \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================================
+% CHAPITRE 3 : INFRASTRUCTURE ET SERVICES
+% ============================================================================
+\chapter{Infrastructure et Services}
+
+\section{Cluster Apache Spark}
+
+Le cluster Spark est composé de 3 conteneurs avec la configuration suivante :
+
+\subsection{Spark Master}
+
+\begin{itemize}
+    \item \textbf{Rôle} : Coordinateur du cluster
+    \item \textbf{Ports} : 7077 (RPC), 8081 (Web UI)
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{spark_ui.png}
+\caption{Interface web Spark Master -- vue des workers et des jobs}
+\end{figure}
+
+\subsection{Spark Workers (x2)}
+
+\begin{itemize}
+    \item \textbf{Rôle} : Exécution des tâches
+    \item \textbf{Mémoire} : 2 GB chacun
+    \item \textbf{Cores} : 2 par worker
+\end{itemize}
+
+\subsection{Configuration Optimisée}
+
+\begin{lstlisting}[language=Scala, caption=Configuration Spark]
+.config("spark.sql.adaptive.enabled", "true")
+.config("spark.sql.adaptive.coalescePartitions.enabled", "true")
+.config("spark.sql.adaptive.skewJoin.enabled", "true")
+.config("spark.sql.shuffle.partitions", "200")
+.config("spark.sql.autoBroadcastJoinThreshold", "50MB")
+.config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+.config("spark.sql.parquet.compression.codec", "snappy")
+\end{lstlisting}
+
+\section{MinIO (Data Lake)}
+
+MinIO fournit un stockage objet compatible S3 :
+
+\begin{itemize}
+    \item \textbf{Bucket principal} : \texttt{nyctaxiproject}
+    \item \textbf{Structure} :
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{minio_console.png}
+\caption{Console MinIO -- contenu du bucket \texttt{nyctaxiproject}}
+\end{figure}
+
+\begin{lstlisting}[language=bash, caption=Structure du bucket MinIO]
+nyctaxiproject/
+    nyc_raw/                    # Donnees brutes (Ex01)
+        *.parquet
+    taxi_zone_lookup.csv        # Referentiel des zones
+    dwh/
+        yellow_taxi_refined/    # Donnees nettoyees (Ex02)
+            date_id=*/
+                *.parquet
+\end{lstlisting}
+
+\section{PostgreSQL (Data Warehouse)}
+
+\begin{itemize}
+    \item \textbf{Base de données} : \texttt{nyc\_data\_warehouse}
+    \item \textbf{Schéma} : \texttt{dw}
+    \item \textbf{Utilisateur} : \texttt{user\_dw}
+    \item \textbf{Modèle} : Schéma en constellation
+    \item \textbf{Tables} : 9 (5 dimensions + 4 faits)
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{pgadmin_tables.png}
+\caption{pgAdmin -- liste des tables du schéma \texttt{dw}}
+\end{figure}
+
+\section{Apache Airflow}
+
+L'orchestration repose sur 3 composants :
+
+\begin{enumerate}
+    \item \textbf{airflow-postgres} : Base de métadonnées Airflow
+    \item \textbf{airflow-webserver} : Interface utilisateur (port 8082)
+    \item \textbf{airflow-scheduler} : Planification des DAGs
+\end{enumerate}
+
+% ============================================================================
+% CHAPITRE 4 : DESCRIPTION DES EXERCICES
+% ============================================================================
+\chapter{Description des Exercices}
+
+\section{Exercice 1 : Récupération des Données}
+
+\subsection{Objectif}
+
+Télécharger les données brutes depuis le système de fichiers local et les stocker dans le Data Lake MinIO.
+
+\subsection{Implémentation}
+
+\begin{lstlisting}[language=Scala, caption=Upload vers MinIO (Ex01)]
+// Lecture des fichiers Parquet locaux
+val df = spark.read.parquet("/data/raw/*.parquet")
+
+// Upload vers MinIO
+df.write.mode("overwrite").parquet(s"s3a://${bucketName}/nyc_raw/")
+
+// Upload du fichier de reference des zones
+val csvLocalPath = "/data/raw/taxi_zone_lookup.csv"
+val csvOutputPath = s"s3a://${bucketName}/taxi_zone_lookup.csv"
+\end{lstlisting}
+
+\subsection{Données Transférées}
+
+\begin{itemize}
+    \item Fichiers Parquet des courses de taxi
+    \item Fichier CSV de référence des zones (265 zones)
+\end{itemize}
+
+\section{Exercice 2 : Ingestion et Nettoyage}
+
+\subsection{Objectif}
+
+Nettoyer, valider et transformer les données brutes avec détection des outliers.
+
+\subsection{Pipeline en 6 Étapes}
+
+\begin{table}[H]
+\centering
+\caption{Étapes du pipeline de nettoyage}
+\begin{tabular}{@{}clp{7cm}@{}}
+\toprule
+\textbf{Étape} & \textbf{Description} & \textbf{Critères} \\
+\midrule
+1 & Chargement zones & 265 zones TLC \\
+2 & Filtrage contractuel & Passagers 1-6, Année $\geq$ 2020, IDs valides \\
+3 & Métriques dérivées & Durée, vitesse, ratio pourboire \\
+4 & Détection remboursements & Paires course/annulation \\
+5 & Détection outliers & IQR, Z-Score, règles métier \\
+6 & Écriture partitionnée & Par date\_id \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Critères de Détection des Outliers}
+
+\begin{lstlisting}[language=Scala, caption=Seuils de detection des outliers]
+val MIN_DURATION_MINUTES = 2.0
+val MAX_SPEED_MPH = 120.0
+val SPEED_YELLOW_ZONE = 45.0
+val SPEED_GLOBAL = 80.0
+val MIN_DISTANCE = 0.3
+val MAX_LOOP_DISTANCE = 5.0
+val MAX_PRICE_PER_MILE = 25.0
+val MAX_DURATION_HOURS = 5.0
+val ZSCORE_THRESHOLD = 3.0
+\end{lstlisting}
+
+\subsection{Flags de Qualité}
+
+\begin{itemize}
+    \item \texttt{is\_outlier} : Boolean indiquant une anomalie
+    \item \texttt{outlier\_reason} : "High Speed", "Price/Mile > \$25", "Duration > 5h"
+    \item \texttt{data\_quality\_score} : 0 (outlier), 75 (acceptable), 100 (parfait)
+\end{itemize}
+
+\section{Exercice 3 : Création du Data Warehouse}
+
+\subsection{Objectif}
+
+Construire un entrepôt de données OLAP avec un schéma en constellation.
+
+\subsection{Justification du Choix de l'Architecture en Constellation}
+
+Le choix d'un \textbf{schéma en constellation} (aussi appelé \textit{Galaxy Schema}) pour le Data Warehouse repose sur une analyse approfondie des besoins métier et des caractéristiques des données.
+
+\subsubsection{Comparaison des Architectures Dimensionnelles}
+
+\begin{table}[H]
+\centering
+\caption{Comparaison des schémas dimensionnels}
+\begin{tabular}{@{}p{2.5cm}p{4cm}p{4cm}p{3cm}@{}}
+\toprule
+\textbf{Schéma} & \textbf{Avantages} & \textbf{Inconvénients} & \textbf{Cas d'usage} \\
+\midrule
+\textbf{Étoile} &
+Simplicité, requêtes rapides, facile à comprendre &
+Redondance des données, une seule table de faits &
+Analyses simples, mono-processus \\
+\midrule
+\textbf{Flocon de neige} &
+Normalisation, moins de redondance &
+Jointures complexes, performances dégradées &
+Espace disque limité \\
+\midrule
+\textbf{Constellation} &
+Multiple tables de faits, dimensions partagées, flexible &
+Complexité accrue, maintenance plus lourde &
+\textbf{Analyses multi-processus} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Raisons du Choix pour BigYellowData}
+
+\begin{enumerate}
+    \item \textbf{Multiplicité des analyses requises}
+
+    Le projet nécessite plusieurs axes d'analyse distincts :
+    \begin{itemize}
+        \item Analyse détaillée par course (\texttt{fact\_trip})
+        \item Performance des vendeurs par jour (\texttt{fact\_vendor\_daily})
+        \item Analyse géographique des pickups (\texttt{fact\_daily\_pickup\_zone})
+        \item Analyse géographique des dropoffs (\texttt{fact\_daily\_dropoff\_zone})
+    \end{itemize}
+
+    Un schéma en étoile unique ne permettrait pas de répondre efficacement à tous ces besoins sans créer des requêtes complexes et coûteuses.
+
+    \item \textbf{Partage des dimensions}
+
+    Les dimensions \texttt{dim\_date}, \texttt{dim\_location}, \texttt{dim\_vendor} sont partagées entre plusieurs tables de faits, évitant ainsi :
+    \begin{itemize}
+        \item La duplication des données de référence
+        \item Les incohérences lors des mises à jour
+        \item La multiplication des jointures redondantes
+    \end{itemize}
+
+    \item \textbf{Optimisation des performances}
+
+    \begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \draw[thick, ->] (0,0) -- (8,0) node[right] {Volume de données};
+        \draw[thick, ->] (0,0) -- (0,4) node[above] {Temps de requête};
+
+        % Courbe fact_trip (détaillée)
+        \draw[primarycolor, thick] (0.5,0.5) .. controls (3,1) and (5,2.5) .. (7.5,3.5);
+        \node[primarycolor, right] at (7.5,3.5) {\small fact\_trip};
+
+        % Courbe tables agrégées (rapide)
+        \draw[blue, thick] (0.5,0.3) .. controls (3,0.5) and (5,0.7) .. (7.5,1);
+        \node[blue, right] at (7.5,1) {\small Tables agrégées};
+    \end{tikzpicture}
+    \caption{Performance comparée : tables détaillées vs agrégées}
+    \end{figure}
+
+    Les tables de faits agrégées (\texttt{fact\_vendor\_daily}, \texttt{fact\_daily\_*\_zone}) pré-calculent les métriques courantes, réduisant drastiquement le temps de réponse pour les requêtes du dashboard.
+
+    \item \textbf{Granularités multiples}
+
+    \begin{table}[H]
+    \centering
+    \caption{Granularité des tables de faits}
+    \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Table} & \textbf{Grain} & \textbf{Usage} \\
+    \midrule
+    fact\_trip & 1 course & Analyse détaillée, ML, outliers \\
+    fact\_vendor\_daily & 1 vendeur $\times$ 1 jour & KPIs vendeurs, tendances \\
+    fact\_daily\_pickup\_zone & 1 zone $\times$ 1 jour & Heatmaps, analyse spatiale \\
+    fact\_daily\_dropoff\_zone & 1 zone $\times$ 1 jour & Flux de destination \\
+    \bottomrule
+    \end{tabular}
+    \end{table}
+
+    \item \textbf{Évolutivité}
+
+    Le schéma en constellation permet d'ajouter facilement de nouvelles tables de faits (ex: \texttt{fact\_hourly\_stats}, \texttt{fact\_monthly\_revenue}) sans modifier les dimensions existantes.
+
+    \item \textbf{Séparation des préoccupations}
+
+    \begin{itemize}
+        \item \texttt{fact\_trip} : Données complètes pour le Machine Learning et l'analyse des outliers
+        \item Tables agrégées : Données optimisées pour le dashboard et les KPIs temps réel
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Alternatives Écartées}
+
+\begin{itemize}
+    \item \textbf{Schéma en étoile unique} : Rejeté car il aurait nécessité des agrégations à la volée pour chaque requête dashboard, impactant les performances.
+
+    \item \textbf{Schéma en flocon de neige} : Rejeté car la normalisation excessive des dimensions (ex: normaliser \texttt{dim\_location} en borough $\rightarrow$ zone $\rightarrow$ service\_zone) aurait complexifié les requêtes sans apporter de bénéfice significatif pour un référentiel de seulement 265 zones.
+
+    \item \textbf{Data Vault} : Rejeté car trop complexe pour ce projet pédagogique, bien qu'il soit adapté aux environnements d'entreprise avec des sources multiples.
+\end{itemize}
+
+\subsection{Schéma en Constellation}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=2cm,
+    dim/.style={rectangle, draw=blue!50, fill=blue!10, text width=2.5cm, text centered, minimum height=1cm, rounded corners=3pt},
+    fact/.style={rectangle, draw=primarycolor, fill=primarycolor!20, text width=2.8cm, text centered, minimum height=1.2cm, rounded corners=3pt},
+    arrow/.style={-, thick, gray}
+]
+    % Dimensions
+    \node[dim] (date) at (0,4) {dim\_date\\(calendrier)};
+    \node[dim] (vendor) at (-4,2) {dim\_vendor};
+    \node[dim] (location) at (4,2) {dim\_location};
+    \node[dim] (ratecode) at (-4,0) {dim\_ratecode};
+    \node[dim] (payment) at (4,0) {dim\_payment\_type};
+
+    % Facts
+    \node[fact] (trip) at (0,1.5) {fact\_trip\\(grain: course)};
+    \node[fact] (vendor_daily) at (0,-1) {fact\_vendor\_daily};
+    \node[fact] (pickup) at (-3,-2.5) {fact\_daily\_pickup\_zone};
+    \node[fact] (dropoff) at (3,-2.5) {fact\_daily\_dropoff\_zone};
+
+    % Connections
+    \draw[arrow] (date) -- (trip);
+    \draw[arrow] (vendor) -- (trip);
+    \draw[arrow] (location) -- (trip);
+    \draw[arrow] (ratecode) -- (trip);
+    \draw[arrow] (payment) -- (trip);
+    \draw[arrow] (trip) -- (vendor_daily);
+    \draw[arrow] (vendor_daily) -- (pickup);
+    \draw[arrow] (vendor_daily) -- (dropoff);
+
+\end{tikzpicture}
+\caption{Schéma en constellation du Data Warehouse}
+\end{figure}
+
+\subsection{Tables de Dimensions}
+
+\begin{table}[H]
+\centering
+\caption{Structure des tables de dimensions}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Table} & \textbf{Clé Primaire} & \textbf{Colonnes Principales} \\
+\midrule
+dim\_date & date\_id & full\_date, year, month, day, is\_weekend \\
+dim\_location & location\_id & borough, zone, service\_zone \\
+dim\_vendor & vendor\_id & vendor\_name \\
+dim\_ratecode & ratecode\_id & description \\
+dim\_payment\_type & payment\_type\_id & description \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{table_dim_vendor.png}
+    \caption{dim\_vendor}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{table_dim_ratecode.png}
+    \caption{dim\_ratecode}
+\end{subfigure}
+\caption{Contenu des tables de dimensions (extrait pgAdmin)}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{table_dim_payment.png}
+    \caption{dim\_payment\_type}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{table_dim_location.png}
+    \caption{dim\_location (extrait)}
+\end{subfigure}
+\caption{Contenu des tables de dimensions (suite)}
+\end{figure}
+
+\subsection{Table de Faits Principale}
+
+La table \texttt{fact\_trip} contient les colonnes suivantes :
+
+\begin{table}[H]
+\centering
+\caption{Structure de fact\_trip}
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Catégorie} & \textbf{Colonnes} \\
+\midrule
+Clés étrangères & date\_id, vendor\_id, ratecode\_id, payment\_type\_id, pickup\_location\_id, dropoff\_location\_id \\
+Timestamps & tpep\_pickup\_datetime, tpep\_dropoff\_datetime \\
+Mesures & trip\_distance, fare\_amount, tip\_amount, total\_amount, ... \\
+Dérivées & trip\_duration\_minutes, avg\_speed\_mph, tip\_ratio \\
+Qualité & is\_outlier, outlier\_reason \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{table_fact_trip.png}
+\caption{Extrait de la table \texttt{fact\_trip} dans pgAdmin (premières lignes)}
+\end{figure}
+
+\section{Exercice 4 : Dashboard Analytique}
+
+\subsection{Objectif}
+
+Développer un dashboard interactif pour la visualisation des données.
+
+\subsection{Technologies}
+
+\begin{itemize}
+    \item \textbf{Framework} : Streamlit
+    \item \textbf{Graphiques} : Plotly
+    \item \textbf{Connexion DB} : SQLAlchemy
+\end{itemize}
+
+\subsection{Onglets Implémentés}
+
+\begin{enumerate}
+    \item \textbf{Vue d'ensemble} : KPIs, tendances journalières, score qualité
+    \item \textbf{Analyse Géographique} : Top zones pickup/dropoff, répartition par borough
+    \item \textbf{Analyse Temporelle} : Distribution horaire, variations hebdomadaires
+    \item \textbf{Vendeurs \& Paiements} : Parts de marché, types de paiement
+    \item \textbf{Distributions} : Tranches de distance et tarif
+    \item \textbf{Analyse des Outliers} : Comparaison, patterns, échantillons détaillés
+\end{enumerate}
+
+\subsection{Captures d'Écran du Dashboard}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{dashboard_overview.png}
+\caption{Dashboard -- Onglet Vue d'ensemble : KPIs et tendances journalières}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{dashboard_geographic.png}
+\caption{Dashboard -- Onglet Analyse Géographique : top zones et arrondissements}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{dashboard_temporal.png}
+\caption{Dashboard -- Onglet Analyse Temporelle : distribution horaire et hebdomadaire}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{dashboard_vendors.png}
+\caption{Dashboard -- Onglet Vendeurs \& Paiements : parts de marché}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{dashboard_distributions.png}
+\caption{Dashboard -- Onglet Distributions : tranches de distance et tarifs}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{dashboard_outliers.png}
+\caption{Dashboard -- Onglet Analyse des Outliers : comparaison et patterns}
+\end{figure}
+
+\section{Exercice 5 : Service de Prédiction ML}
+
+\subsection{Objectif}
+
+Prédire le prix d'une course de taxi à partir des caractéristiques du trajet.
+
+\subsection{Architecture Modulaire}
+
+\begin{lstlisting}[language=bash, caption=Structure du module ML]
+ex05_ml_prediction_service/
+    src/
+        train.py          # Pipeline d'entrainement
+        inference.py      # Moteur de prediction
+        data_manager.py   # ETL pour ML
+        model_manager.py  # Persistance modele
+        app.py            # Interface Streamlit
+    models/
+        taxi_price_model.joblib
+    tests/
+        test_train.py
+        test_inference.py
+\end{lstlisting}
+
+\subsection{Features Utilisées}
+
+\begin{table}[H]
+\centering
+\caption{Features du modèle ML}
+\begin{tabular}{@{}llc@{}}
+\toprule
+\textbf{Feature} & \textbf{Description} & \textbf{Type} \\
+\midrule
+trip\_distance & Distance du trajet & Numérique \\
+pickup\_location\_id & Zone de départ & Catégoriel \\
+dropoff\_location\_id & Zone d'arrivée & Catégoriel \\
+pickup\_hour & Heure de prise en charge & Numérique \\
+day\_of\_week & Jour de la semaine & Numérique \\
+is\_rush\_hour & Heure de pointe (7-9h, 17-19h) & Binaire \\
+is\_weekend & Week-end & Binaire \\
+is\_night & Nuit (22h-5h) & Binaire \\
+is\_airport\_trip & Trajet aéroport & Binaire \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Modèle}
+
+\textbf{Random Forest Regressor} avec les hyperparamètres :
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Paramètre} & \textbf{Valeur} & \textbf{Justification} \\
+\midrule
+n\_estimators & 100 & Bon compromis performance/temps \\
+max\_depth & 15 & Évite le surapprentissage \\
+min\_samples\_split & 10 & Régularisation \\
+n\_jobs & -1 & Parallélisation maximale \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{ml_training_output.png}
+\caption{Sortie console de l'entraînement du modèle ML (RMSE, métriques)}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{ml_streamlit_app.png}
+\caption{Interface Streamlit du service de prédiction ML}
+\end{figure}
+
+\section{Exercice 6 : Orchestration Airflow}
+
+\subsection{Objectif}
+
+Automatiser le pipeline complet avec Apache Airflow, incluant le téléchargement automatique des dernières données disponibles depuis le site NYC TLC.
+
+\subsection{DAG 1 : Pipeline Complet (Manuel)}
+
+\begin{table}[H]
+\centering
+\caption{Tâches du DAG principal}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Task ID} & \textbf{Description} & \textbf{Dépendances} \\
+\midrule
+start & Début du workflow & - \\
+check\_infrastructure & Vérifie les conteneurs & start \\
+ex01\_data\_retrieval & Téléchargement données & check\_infrastructure \\
+ex02\_data\_ingestion & Nettoyage Spark & ex01 \\
+ex03\_dwh\_loading & Chargement DWH (6 sous-tâches) & ex02 \\
+ex05\_ml\_training & Entraînement modèle & ex03 \\
+end & Fin du workflow & ex05 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{DAG 2 : Rafraîchissement Mensuel Automatique}
+
+Le DAG mensuel télécharge \textbf{automatiquement} les dernières données disponibles depuis le site de la NYC TLC, sans intervention manuelle.
+
+\begin{itemize}
+    \item \textbf{Schedule} : \texttt{0 2 1 * *} (1er du mois à 2h00)
+    \item \textbf{Source} : \texttt{https://d37ci6vzurychx.cloudfront.net/trip-data/}
+    \item \textbf{Retry} : 2 tentatives, délai 2 minutes
+\end{itemize}
+
+\subsubsection{Fonctionnement du Téléchargement Automatique}
+
+Le script \texttt{download\_nyc\_data.py} implémente la logique suivante :
+
+\begin{enumerate}
+    \item \textbf{Inventaire MinIO} : Liste les fichiers déjà présents dans \texttt{nyc\_raw/} pour identifier les mois disponibles.
+    \item \textbf{Calcul des mois manquants} : Compare avec les 12 derniers mois (en tenant compte du délai de publication de $\sim$2 mois par la TLC).
+    \item \textbf{Vérification de disponibilité} : Envoie des requêtes HTTP HEAD au CDN de la TLC pour chaque mois manquant.
+    \item \textbf{Téléchargement et upload} : Pour chaque mois disponible, télécharge le fichier Parquet et l'uploade directement dans MinIO via le client Python \texttt{minio}.
+    \item \textbf{Short-circuit} : Si aucune nouvelle donnée n'est disponible, le pipeline s'arrête proprement sans erreur grâce à un \texttt{ShortCircuitOperator}.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Tâches du DAG mensuel automatique}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Task ID} & \textbf{Description} & \textbf{Type} \\
+\midrule
+notify\_start & Notification de démarrage & BashOperator \\
+download\_new\_data & Téléchargement TLC $\rightarrow$ MinIO & PythonOperator \\
+check\_new\_data & Short-circuit si rien de nouveau & ShortCircuitOperator \\
+process\_new\_data & Nettoyage Spark (Ex02) & BashOperator \\
+load\_to\_dwh & Chargement PostgreSQL (Ex03) & BashOperator \\
+retrain\_model & Ré-entraînement ML (Ex05) & BashOperator \\
+notify\_end & Notification de fin & BashOperator \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{URL des Données NYC TLC}
+
+Les fichiers Parquet sont disponibles publiquement sur le CDN CloudFront de la TLC :
+
+\begin{lstlisting}[language=bash, caption=Pattern d'URL des donnees NYC TLC]
+# Format de l'URL
+https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_YYYY-MM.parquet
+
+# Exemples
+yellow_tripdata_2025-08.parquet   # Aout 2025
+yellow_tripdata_2025-09.parquet   # Septembre 2025
+yellow_tripdata_2025-10.parquet   # Octobre 2025
+\end{lstlisting}
+
+Les données sont publiées avec un délai d'environ 2 mois : le fichier de novembre 2025 devient typiquement disponible fin janvier 2026.
+
+% ============================================================================
+% CHAPITRE 5 : MODELISATION DES DONNEES
+% ============================================================================
+\chapter{Modélisation des Données}
+
+\section{Données Sources}
+
+Les données NYC TLC Yellow Taxi contiennent les colonnes suivantes :
+
+\begin{longtable}{@{}llp{6cm}@{}}
+\toprule
+\textbf{Colonne} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\endhead
+VendorID & Integer & Fournisseur TPEP (1=CMT, 2=VeriFone) \\
+tpep\_pickup\_datetime & Timestamp & Date/heure de prise en charge \\
+tpep\_dropoff\_datetime & Timestamp & Date/heure de dépose \\
+passenger\_count & Integer & Nombre de passagers \\
+trip\_distance & Double & Distance en miles \\
+RatecodeID & Integer & Code tarifaire \\
+store\_and\_fwd\_flag & String & Y=stocké avant envoi \\
+PULocationID & Integer & Zone de pickup (1-265) \\
+DOLocationID & Integer & Zone de dropoff (1-265) \\
+payment\_type & Integer & Mode de paiement \\
+fare\_amount & Double & Tarif de base \\
+extra & Double & Suppléments \\
+mta\_tax & Double & Taxe MTA (0.50\$) \\
+tip\_amount & Double & Pourboire \\
+tolls\_amount & Double & Péages \\
+improvement\_surcharge & Double & Taxe amélioration \\
+congestion\_surcharge & Double & Taxe congestion \\
+airport\_fee & Double & Frais aéroport \\
+total\_amount & Double & Montant total \\
+\bottomrule
+\caption{Structure des données sources NYC TLC}
+\end{longtable}
+
+\section{Référentiel des Zones}
+
+Le fichier \texttt{taxi\_zone\_lookup.csv} contient 265 zones réparties en 6 boroughs :
+
+\begin{table}[H]
+\centering
+\caption{Répartition des zones par borough}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Borough} & \textbf{Nombre de zones} \\
+\midrule
+Manhattan & 69 \\
+Queens & 69 \\
+Brooklyn & 61 \\
+Bronx & 43 \\
+Staten Island & 20 \\
+EWR (Newark) & 1 \\
+Unknown & 2 \\
+\midrule
+\textbf{Total} & \textbf{265} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Transformations Appliquées}
+
+Les colonnes dérivées ajoutées par l'exercice 2 :
+
+\begin{table}[H]
+\centering
+\caption{Colonnes dérivées}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Colonne} & \textbf{Formule} \\
+\midrule
+trip\_duration\_hours & (dropoff - pickup) / 3600 \\
+avg\_speed\_mph & trip\_distance / trip\_duration\_hours \\
+tip\_ratio & tip\_amount / total\_amount \\
+price\_per\_mile & total\_amount / trip\_distance \\
+date\_id & Format YYYYMMDD \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================================
+% CHAPITRE 6 : ANALYSE DES DONNEES
+% ============================================================================
+\chapter{Analyse des Données}
+
+\section{Volumétrie}
+
+Les données traitées représentent typiquement :
+
+\begin{table}[H]
+\centering
+\caption{Volumétrie des données}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Métrique} & \textbf{Valeur approximative} \\
+\midrule
+Période couverte & 2020 - présent \\
+Nombre de courses & 5-10 millions \\
+Taille brute & $\sim$200 MB (Parquet) \\
+Après nettoyage & $\sim$180 MB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Règles de Qualité}
+
+Les données sont filtrées selon ces critères :
+
+\begin{table}[H]
+\centering
+\caption{Règles de filtrage des données}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Règle} & \textbf{Critère} \\
+\midrule
+Passagers valides & $1 \leq$ passenger\_count $\leq 6$ \\
+Distance minimale & trip\_distance $\geq$ 0.3 miles \\
+Durée minimale & duration $\geq$ 2 minutes \\
+Vitesse maximale & speed $\leq$ 120 mph \\
+Prix cohérent & total\_amount $\geq$ 0 \\
+Zones valides & PU/DO LocationID $\in$ [1-265] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Détection des Outliers}
+
+\subsection{Méthode IQR (Interquartile Range)}
+
+\begin{equation}
+\text{Limite basse} = Q_1 - 1.5 \times IQR
+\end{equation}
+\begin{equation}
+\text{Limite haute} = Q_3 + 1.5 \times IQR
+\end{equation}
+
+où $IQR = Q_3 - Q_1$
+
+Cette méthode est appliquée sur : \texttt{trip\_distance}, \texttt{total\_amount}, \texttt{avg\_speed\_mph}, \texttt{trip\_duration\_hours}
+
+\subsection{Méthode Z-Score par Route}
+
+Pour chaque paire (pickup, dropoff) avec au moins 10 courses :
+
+\begin{equation}
+Z = \frac{|distance - \mu_{route}|}{\sigma_{route}}
+\end{equation}
+
+Un trajet est considéré comme outlier si $Z > 3$.
+
+\section{Statistiques Observées}
+
+\begin{table}[H]
+\centering
+\caption{Statistiques moyennes des données nettoyées}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Métrique} & \textbf{Valeur moyenne} \\
+\midrule
+Distance & 3-5 miles \\
+Durée & 15-20 minutes \\
+Tarif total & \$15-25 \\
+Pourboire (CB) & 15-20\% \\
+Taux d'outliers & 1-3\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Patterns Temporels}
+
+\subsection{Distribution Horaire}
+
+\begin{itemize}
+    \item \textbf{Pics} : 8-9h (rush matin), 18-19h (rush soir)
+    \item \textbf{Creux} : 3-5h (nuit)
+\end{itemize}
+
+\subsection{Distribution Hebdomadaire}
+
+\begin{itemize}
+    \item \textbf{Plus d'activité} : Vendredi, Samedi
+    \item \textbf{Moins d'activité} : Dimanche matin
+\end{itemize}
+
+% ============================================================================
+% CHAPITRE 7 : MACHINE LEARNING
+% ============================================================================
+\chapter{Machine Learning}
+
+\section{Problématique}
+
+Prédire le prix total d'une course de taxi (\texttt{total\_amount}) à partir des caractéristiques du trajet.
+
+\section{Feature Engineering}
+
+\subsection{Features Temporelles}
+
+\begin{lstlisting}[language=Python, caption=Création des features temporelles]
+df['pickup_hour'] = df['tpep_pickup_datetime'].dt.hour
+df['day_of_week'] = df['tpep_pickup_datetime'].dt.dayofweek
+df['is_rush_hour'] = df['pickup_hour'].isin([7, 8, 9, 17, 18, 19])
+df['is_weekend'] = df['day_of_week'] >= 5
+df['is_night'] = df['pickup_hour'].isin([22, 23, 0, 1, 2, 3, 4, 5])
+\end{lstlisting}
+
+\subsection{Feature Aéroport}
+
+\begin{lstlisting}[language=Python, caption=Detection des trajets aeroport]
+airport_ids = [1, 132, 138]  # Newark, JFK, LaGuardia
+df['is_airport_trip'] = (
+    df['pickup_location_id'].isin(airport_ids) |
+    df['dropoff_location_id'].isin(airport_ids)
+)
+\end{lstlisting}
+
+\section{Pipeline d'Entraînement}
+
+\begin{enumerate}
+    \item Téléchargement depuis MinIO
+    \item Split Train/Test (80/20)
+    \item Filtrage des outliers
+    \item Feature engineering
+    \item Entraînement Random Forest
+    \item Évaluation (RMSE)
+    \item Sauvegarde (joblib)
+\end{enumerate}
+
+\section{Métriques d'Évaluation}
+
+\begin{itemize}
+    \item \textbf{RMSE} (Root Mean Square Error) : Métrique principale
+    \item \textbf{Objectif} : RMSE < \$5 pour une prédiction exploitable
+\end{itemize}
+
+\begin{equation}
+RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}
+\end{equation}
+
+% ============================================================================
+% CHAPITRE 8 : ORCHESTRATION ET AUTOMATISATION
+% ============================================================================
+\chapter{Orchestration et Automatisation}
+
+\section{Architecture Airflow}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    box/.style={rectangle, draw=secondarycolor, fill=white, text width=3cm, text centered, minimum height=1cm, rounded corners=3pt}
+]
+    \node[box] (postgres) {airflow-postgres\\(Metadata DB)};
+    \node[box, right of=postgres, xshift=3cm] (init) {airflow-init\\(DB Setup)};
+    \node[box, below of=postgres, yshift=-0.5cm] (webserver) {airflow-webserver\\(Port 8082)};
+    \node[box, right of=webserver, xshift=3cm] (scheduler) {airflow-scheduler};
+
+    \draw[->] (init) -- (postgres);
+    \draw[->] (postgres) -- (webserver);
+    \draw[<->] (webserver) -- (scheduler);
+\end{tikzpicture}
+\caption{Architecture du cluster Airflow}
+\end{figure}
+
+\section{DAGs Implémentés}
+
+\subsection{DAG 1 : Pipeline Complet}
+
+\begin{itemize}
+    \item \textbf{Nom} : \texttt{nyc\_taxi\_full\_pipeline}
+    \item \textbf{Déclenchement} : Manuel
+    \item \textbf{Tags} : nyc-taxi, etl, spark, ml, pipeline
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{airflow_dag_full.png}
+\caption{Airflow -- Graphe du DAG \texttt{nyc\_taxi\_full\_pipeline}}
+\end{figure}
+
+\subsection{DAG 2 : Rafraîchissement Mensuel avec Auto-Download}
+
+\begin{itemize}
+    \item \textbf{Nom} : \texttt{nyc\_taxi\_monthly\_refresh}
+    \item \textbf{Cron} : \texttt{0 2 1 * *}
+    \item \textbf{Description} : Téléchargement automatique des dernières données TLC + traitement complet
+\end{itemize}
+
+Ce DAG remplace l'appel au JAR Scala Ex01 par un script Python (\texttt{download\_nyc\_data.py}) qui va chercher directement les données sur le site de la NYC TLC. Le flux est le suivant :
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=1.2cm,
+    task/.style={rectangle, draw=secondarycolor, fill=white, text width=2.5cm, text centered, minimum height=0.9cm, rounded corners=3pt, font=\small},
+    python/.style={rectangle, draw=blue!50, fill=blue!10, text width=2.5cm, text centered, minimum height=0.9cm, rounded corners=3pt, font=\small},
+    arrow/.style={->, thick, secondarycolor}
+]
+    \node[task] (start) {notify\_start};
+    \node[python, right of=start, xshift=2cm] (dl) {download\_new\_data\\(PythonOperator)};
+    \node[python, right of=dl, xshift=2cm] (check) {check\_new\_data\\(ShortCircuit)};
+    \node[task, right of=check, xshift=2cm] (ex02) {process\_new\_data\\(Spark Ex02)};
+    \node[task, below of=ex02, yshift=-0.5cm] (ex03) {load\_to\_dwh\\(Spark Ex03)};
+    \node[task, left of=ex03, xshift=-2cm] (ex05) {retrain\_model\\(ML Ex05)};
+    \node[task, left of=ex05, xshift=-2cm] (end) {notify\_end};
+
+    \draw[arrow] (start) -- (dl);
+    \draw[arrow] (dl) -- (check);
+    \draw[arrow] (check) -- node[above, font=\tiny] {new data} (ex02);
+    \draw[arrow] (ex02) -- (ex03);
+    \draw[arrow] (ex03) -- (ex05);
+    \draw[arrow] (ex05) -- (end);
+
+    % Short-circuit annotation
+    \draw[->, thick, dashed, red!60] (check.south) -- ++(0,-0.4) node[below, font=\tiny, red!60] {no data: skip};
+\end{tikzpicture}%
+}
+\caption{Graphe du DAG \texttt{nyc\_taxi\_monthly\_refresh} avec auto-download}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{airflow_dag_monthly.png}
+\caption{Airflow -- Interface du DAG \texttt{nyc\_taxi\_monthly\_refresh}}
+\end{figure}
+
+\subsubsection{Script de Téléchargement Automatique}
+
+Le script \texttt{download\_nyc\_data.py} utilise la bibliothèque standard \texttt{urllib} et le client Python \texttt{minio} (déjà installé dans le conteneur Airflow) :
+
+\begin{lstlisting}[language=Python, caption=Logique principale du telechargement automatique]
+# 1. Connexion a MinIO et inventaire des mois existants
+existing = get_existing_months_in_minio(client)
+
+# 2. Calcul des mois candidats (12 derniers mois, delai 2 mois)
+candidates = get_candidate_months()
+missing = [m for m in candidates if m not in existing]
+
+# 3. Pour chaque mois manquant, verifier et telecharger
+for year, month in missing:
+    url = f"https://...yellow_tripdata_{year}-{month:02d}.parquet"
+    if check_url_exists(url):       # HTTP HEAD
+        download_and_upload(year, month, client)  # -> MinIO
+\end{lstlisting}
+
+\section{Gestion des Erreurs}
+
+\begin{itemize}
+    \item Retry automatique (2 tentatives)
+    \item Logs centralisés dans \texttt{/opt/airflow/logs}
+    \item Alertes configurables par email
+\end{itemize}
+
+% ============================================================================
+% CHAPITRE 9 : CONCLUSION
+% ============================================================================
+\chapter{Conclusion}
+
+\section{Résumé des Réalisations}
+
+Le projet BigYellowData implémente avec succès :
+
+\begin{enumerate}
+    \item \textbf{Pipeline ETL robuste} : Extraction, transformation et chargement automatisés
+    \item \textbf{Qualité des données} : Détection d'outliers multicritères (IQR, Z-Score, règles métier)
+    \item \textbf{Data Warehouse} : Schéma en constellation optimisé pour l'analyse OLAP
+    \item \textbf{Visualisation} : Dashboard interactif avec 6 vues analytiques
+    \item \textbf{Machine Learning} : Prédiction de prix avec Random Forest
+    \item \textbf{Orchestration} : Automatisation complète via Airflow
+\end{enumerate}
+
+\section{Points Forts Techniques}
+
+\begin{itemize}
+    \item \textbf{Scalabilité} : Architecture Spark distribuée
+    \item \textbf{Reproductibilité} : Conteneurisation Docker complète
+    \item \textbf{Maintenabilité} : Code modulaire et documenté
+    \item \textbf{Qualité} : Tests unitaires et garde-fous
+\end{itemize}
+
+\section{Évolutions Possibles}
+
+\begin{table}[H]
+\centering
+\caption{Améliorations futures envisageables}
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Amélioration} & \textbf{Description} \\
+\midrule
+Streaming & Intégration Kafka pour données temps réel \\
+ML avancé & XGBoost, réseaux de neurones \\
+Géospatial & Visualisation carte interactive \\
+Monitoring & Prometheus + Grafana pour les métriques \\
+CI/CD & Pipeline GitHub Actions \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================================
+% ANNEXES
+% ============================================================================
+\appendix
+
+\chapter{Commandes Utiles}
+
+\begin{lstlisting}[language=bash, caption=Commandes principales]
+# Demarrer l'infrastructure
+docker-compose up -d
+
+# Executer le pipeline complet
+./setup_and_run.sh all
+
+# Acceder aux interfaces
+# Spark UI:      http://localhost:8081
+# MinIO:         http://localhost:9001
+# pgAdmin:       http://localhost:5050
+# Dashboard:     http://localhost:8501
+# Airflow:       http://localhost:8082
+\end{lstlisting}
+
+\chapter{Identifiants par Défaut}
+
+\begin{table}[H]
+\centering
+\caption{Identifiants de connexion}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Service} & \textbf{Utilisateur} & \textbf{Mot de passe} \\
+\midrule
+MinIO & minioadmin & minioadmin \\
+PostgreSQL & user\_dw & password\_dw \\
+pgAdmin & admin@admin.com & admin \\
+Airflow & admin & admin \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\chapter{Structure des Répertoires}
+
+\begin{lstlisting}[language=bash, caption=Arborescence du projet]
+BigYellowData/
+    data/
+        raw/              # Donnees brutes
+        processed/        # Donnees ML
+        external/         # Donnees externes
+    ex01_data_retrieval/  # Exercice 1
+    ex02_data_ingestion/  # Exercice 2
+    ex03_sql_table_creation/ # Exercice 3
+    ex04_dashboard/       # Exercice 4
+    ex05_ml_prediction_service/ # Exercice 5
+    ex06_airflow/         # Exercice 6
+    docker/               # Configuration Spark
+    docker-compose.yml    # Orchestration services
+    setup_and_run.sh      # Script principal
+\end{lstlisting}
+
+\chapter{Captures d'Écran Requises}
+
+Liste des fichiers images à placer dans le dossier \texttt{images/} :
+
+\begin{longtable}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Fichier} & \textbf{Description} \\
+\midrule
+\endhead
+\multicolumn{2}{l}{\textit{Infrastructure (Chapitre 3)}} \\
+\midrule
+\texttt{spark\_ui.png} & Spark Master UI (\texttt{http://localhost:8081}) -- vue des workers \\
+\texttt{minio\_console.png} & Console MinIO (\texttt{http://localhost:9001}) -- contenu du bucket \\
+\texttt{pgadmin\_tables.png} & pgAdmin (\texttt{http://localhost:5050}) -- liste des tables du schéma \texttt{dw} \\
+\midrule
+\multicolumn{2}{l}{\textit{Tables du Data Warehouse (Chapitre 4, Ex03)}} \\
+\midrule
+\texttt{table\_dim\_vendor.png} & pgAdmin -- SELECT * FROM dw.dim\_vendor \\
+\texttt{table\_dim\_ratecode.png} & pgAdmin -- SELECT * FROM dw.dim\_ratecode \\
+\texttt{table\_dim\_payment.png} & pgAdmin -- SELECT * FROM dw.dim\_payment\_type \\
+\texttt{table\_dim\_location.png} & pgAdmin -- SELECT * FROM dw.dim\_location LIMIT 20 \\
+\texttt{table\_fact\_trip.png} & pgAdmin -- SELECT * FROM dw.fact\_trip LIMIT 20 \\
+\midrule
+\multicolumn{2}{l}{\textit{Dashboard (Chapitre 4, Ex04)}} \\
+\midrule
+\texttt{dashboard\_overview.png} & Dashboard (\texttt{http://localhost:8501}) -- onglet Vue d'ensemble \\
+\texttt{dashboard\_geographic.png} & Dashboard -- onglet Géographie \\
+\texttt{dashboard\_temporal.png} & Dashboard -- onglet Temporel \\
+\texttt{dashboard\_vendors.png} & Dashboard -- onglet Vendeurs \& Paiements \\
+\texttt{dashboard\_distributions.png} & Dashboard -- onglet Distributions \\
+\texttt{dashboard\_outliers.png} & Dashboard -- onglet Analyse Outliers \\
+\midrule
+\multicolumn{2}{l}{\textit{Machine Learning (Chapitre 4, Ex05)}} \\
+\midrule
+\texttt{ml\_training\_output.png} & Terminal -- sortie de \texttt{uv run python src/train.py} \\
+\texttt{ml\_streamlit\_app.png} & Interface Streamlit du service de prédiction \\
+\midrule
+\multicolumn{2}{l}{\textit{Airflow (Chapitre 4, Ex06)}} \\
+\midrule
+\texttt{airflow\_dag\_full.png} & Airflow (\texttt{http://localhost:8082}) -- graphe du DAG principal \\
+\texttt{airflow\_dag\_monthly.png} & Airflow -- graphe du DAG mensuel \\
+\bottomrule
+\caption{Récapitulatif des captures d'écran à fournir}
+\end{longtable}
+
+% ============================================================================
+% FIN DU DOCUMENT
+% ============================================================================
+
+\end{document}

@@ -7,6 +7,9 @@ This DAG orchestrates the complete BigYellowData pipeline:
 3. Ex03: SQL Table Creation - Load data into PostgreSQL Data Warehouse
 4. Ex05: ML Training - Train the taxi price prediction model
 
+The monthly refresh DAG automatically fetches the latest available
+data from the NYC TLC website and processes it end-to-end.
+
 Prerequisites:
 - All Spark JARs must be pre-built on the host machine
 - Run: ./setup_and_run.sh all (or individual exercises)
@@ -15,12 +18,16 @@ Prerequisites:
 @version 1.0
 """
 
+import sys
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.task_group import TaskGroup
+
+# Add scripts directory to Python path for the download module
+sys.path.insert(0, '/opt/airflow/scripts')
 
 # Default arguments for all tasks
 default_args = {
@@ -262,15 +269,39 @@ with DAG(
 
 # =============================================================================
 # Monthly Refresh DAG (scheduled)
+# Automatically downloads the latest NYC TLC data from the internet,
+# uploads to MinIO, then runs the full processing pipeline.
 # =============================================================================
 with DAG(
     'nyc_taxi_monthly_refresh',
     default_args=default_args,
-    description='Monthly refresh of NYC Taxi data with new files',
+    description='Monthly auto-download of latest NYC Taxi data from TLC website',
     schedule_interval='0 2 1 * *',  # 2 AM on the 1st of each month
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=['nyc-taxi', 'etl', 'monthly', 'scheduled'],
+    tags=['nyc-taxi', 'etl', 'monthly', 'scheduled', 'auto-download'],
+    doc_md="""
+    # NYC Taxi Monthly Refresh
+
+    This DAG automatically fetches the latest available NYC Yellow Taxi
+    data from the TLC website and processes it through the full pipeline.
+
+    ## How it works
+    1. **Download**: Checks the NYC TLC website for new monthly parquet files
+       not yet present in MinIO, and downloads them automatically.
+    2. **Short-circuit**: If no new data is available, the pipeline stops
+       gracefully (no error).
+    3. **Process**: Runs Ex02 (Spark cleaning), Ex03 (DWH loading),
+       and Ex05 (ML retraining) on the updated data.
+
+    ## Data source
+    URL: `https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_YYYY-MM.parquet`
+
+    TLC publishes data with ~2 months delay.
+
+    ## Schedule
+    Runs on the 1st of each month at 2:00 AM.
+    """,
 ) as dag_monthly:
 
     notify_start = BashOperator(
@@ -278,21 +309,37 @@ with DAG(
         bash_command='echo "Monthly NYC Taxi data refresh started at $(date)"',
     )
 
-    # Reuse the same tasks as the main pipeline
-    monthly_ex01 = BashOperator(
+    # =========================================================================
+    # Step 1: Auto-download latest data from NYC TLC website to MinIO
+    # =========================================================================
+    from download_nyc_data import download_new_taxi_data
+
+    monthly_download = PythonOperator(
         task_id='download_new_data',
-        bash_command=f'''
-            echo "=== Monthly Refresh: Downloading new data ==="
-            JAR_NAME=$(docker exec {SPARK_MASTER} ls /opt/spark/ | grep -E "ex01.*assembly.*\\.jar$" | head -1)
-            docker exec {SPARK_MASTER} /opt/spark/bin/spark-submit \
-                --class SparkApp \
-                --master spark://spark-master:7077 \
-                --packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262 \
-                {SPARK_CONF} \
-                /opt/spark/$JAR_NAME
-        ''',
+        python_callable=download_new_taxi_data,
     )
 
+    # =========================================================================
+    # Step 2: Short-circuit if no new data was downloaded
+    # =========================================================================
+    def _check_new_data_available(**kwargs):
+        """Skip downstream tasks if no new months were downloaded."""
+        ti = kwargs['ti']
+        downloaded = ti.xcom_pull(task_ids='download_new_data')
+        if not downloaded:
+            print("No new data downloaded. Skipping processing.")
+            return False
+        print(f"New data available: {downloaded}. Continuing pipeline.")
+        return True
+
+    check_new_data = ShortCircuitOperator(
+        task_id='check_new_data',
+        python_callable=_check_new_data_available,
+    )
+
+    # =========================================================================
+    # Step 3: Process new data through the pipeline
+    # =========================================================================
     monthly_ex02 = BashOperator(
         task_id='process_new_data',
         bash_command=f'''
@@ -343,4 +390,5 @@ with DAG(
         bash_command='echo "Monthly NYC Taxi data refresh completed at $(date)"',
     )
 
-    notify_start >> monthly_ex01 >> monthly_ex02 >> monthly_ex03 >> monthly_ex05 >> notify_end
+    # Pipeline: download -> check -> process -> load -> retrain
+    notify_start >> monthly_download >> check_new_data >> monthly_ex02 >> monthly_ex03 >> monthly_ex05 >> notify_end

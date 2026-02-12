@@ -24,15 +24,12 @@ def get_taxi_zones():
         'display_name' column. Returns an empty DataFrame if the file
         cannot be found or loaded.
     """
-    # Path relative to the project root (data/raw/ contains the taxi zones)
-    zone_path = "data/raw/taxi_zone_lookup.csv"
+    # Path relative to the project root
+    zone_path = "data/external/taxi_zone_lookup.csv"
 
-    # Fallback: handle case where script is run from inside src/ or ex05 folder
-    if not os.path.exists(zone_path):
-        # Try from ex05_ml_prediction_service folder
-        alt_path = "../data/raw/taxi_zone_lookup.csv"
-        if os.path.exists(alt_path):
-            zone_path = alt_path
+    # Fallback: handle case where script is run from inside src/
+    if not os.path.exists(zone_path) and os.path.exists("../" + zone_path):
+        zone_path = "../" + zone_path
 
     try:
         df = pd.read_csv(zone_path)

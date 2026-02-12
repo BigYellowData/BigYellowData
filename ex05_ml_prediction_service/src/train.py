@@ -1,13 +1,8 @@
 import sys
-from pathlib import Path
 import pytest
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from data_manager import load_data, prepare_data_training
 from model_manager import test_model, save_model
-
-# Project root directory (BigYellowData)
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-DATA_PATH = str(PROJECT_ROOT / "data" / "processed")
 
 
 def main():
@@ -19,7 +14,9 @@ def main():
     """
     print("Loading data...")
     try:
-        train_raw, test_raw = load_data(DATA_PATH)
+        # Assuming script is run from src/ directory
+        data_path = "../data/processed"
+        train_raw, test_raw = load_data(data_path)
     except Exception as e:
         print(f"Critical Error loading data: {e}")
         sys.exit(1)
@@ -33,14 +30,8 @@ def main():
         sys.exit(1)
 
     print(f"Training model on {len(X_train)} rows...")
-    # Using Random Forest for better predictions with engineered features
-    model = RandomForestRegressor(
-        n_estimators=100,
-        max_depth=15,
-        min_samples_split=10,
-        n_jobs=-1,
-        random_state=42
-    )
+    # Using a simple Linear Regression as per project specifications
+    model = LinearRegression()
     model.fit(X_train, y_train)
 
     # Evaluation

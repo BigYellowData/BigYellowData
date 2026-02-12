@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 from src.data_manager import prepare_data_training
-from src.model_manager import REQUIRED_COLUMNS, TARGET_COLUMN
+from src.train import REQUIRED_COLUMNS, TARGET_COLUMN
 
 
 @pytest.fixture

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export MSYS_NO_PATHCONV=1  # Prevent Git Bash from converting Linux paths
 
 # --- 1) Vérif des arguments ---
 if [ $# -lt 1 ]; then
