@@ -7,7 +7,6 @@
 # ============================================================================
 
 set -e  # Exit on error
-export MSYS_NO_PATHCONV=1  # Prevent Git Bash from converting Linux paths
 
 # Colors
 GREEN='\033[0;32m'

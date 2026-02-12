@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export MSYS_NO_PATHCONV=1  # Prevent Git Bash from converting Linux paths
 
 # --- 1) Vérif des arguments ---
 if [ $# -lt 1 ]; then
@@ -37,10 +36,17 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.2.0")
 EOF
   fi
 
-  # --- 3) Build du fat JAR ---
+  # --- 3) Build du fat JAR (via Docker - no local sbt needed) ---
   cd "$PROJECT_DIR_ABS"
-  echo "[INFO] Compilation (sbt assembly)..."
-  sbt -batch clean assembly
+  echo "[INFO] Compilation (sbt assembly via Docker)..."
+  MSYS_NO_PATHCONV=1 docker run --rm \
+    -v "$(pwd)":/app \
+    -v sbt-ivy-cache:/root/.ivy2 \
+    -v sbt-sbt-cache:/root/.sbt \
+    -v sbt-coursier-cache:/root/.cache/coursier \
+    -w /app \
+    sbtscala/scala-sbt:eclipse-temurin-17.0.15_6_1.12.2_2.13.18 \
+    sbt -batch clean assembly
 
   # --- 4) Trouver le JAR ---
   JAR_PATH="$(find target -type f -name '*assembly*.jar' | sort | tail -n1 || true)"
@@ -53,7 +59,7 @@ EOF
 
   # --- 5) Copie dans le conteneur ---
   echo "[INFO] Copie vers spark-master..."
-  docker cp "$JAR_PATH" spark-master:/opt/spark/"$JAR_NAME"
+  MSYS_NO_PATHCONV=1 docker cp "$JAR_PATH" spark-master:/opt/spark/"$JAR_NAME"
 fi
 
 # ==============================================================================
@@ -100,7 +106,7 @@ if [ -f "creation.sql" ] && [ -f "insertion.sql" ]; then
   # 3. Copier le CSV dans le conteneur PostgreSQL
   if [ -f "$CSV_LOCAL_PATH" ]; then
     echo "[INFO] 📦 Copie de taxi_zone_lookup.csv dans le conteneur..."
-    docker cp "$CSV_LOCAL_PATH" "$POSTGRES_CONTAINER":/tmp/taxi_zone_lookup.csv
+    MSYS_NO_PATHCONV=1 docker cp "$CSV_LOCAL_PATH" "$POSTGRES_CONTAINER":/tmp/taxi_zone_lookup.csv
     if [ $? -eq 0 ]; then
       echo "[INFO] ✅ CSV copié dans le conteneur"
     fi
@@ -118,7 +124,7 @@ if [ -f "creation.sql" ] && [ -f "insertion.sql" ]; then
   fi
 
   # Cleanup
-  docker exec "$POSTGRES_CONTAINER" rm -f /tmp/taxi_zone_lookup.csv 2>/dev/null || true
+  MSYS_NO_PATHCONV=1 docker exec "$POSTGRES_CONTAINER" rm -f /tmp/taxi_zone_lookup.csv 2>/dev/null || true
 
 else
   echo "[INFO] Pas de scripts SQL trouvés, on passe directement au job Spark."
@@ -130,9 +136,11 @@ if [ "$IS_SQL_ONLY" = false ]; then
   echo "[INFO] Lancement de spark-submit..."
 
   # J'ai ajouté les --packages et --conf nécessaires pour que l'exo 3 fonctionne
-  docker exec -i spark-master /opt/spark/bin/spark-submit \
+  MSYS_NO_PATHCONV=1 docker exec -i spark-master /opt/spark/bin/spark-submit \
     --class "$MAIN_CLASS" \
     --master spark://spark-master:7077 \
+    --driver-memory 512m \
+    --executor-memory 512m \
     --packages org.postgresql:postgresql:42.6.0,org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262 \
     --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
     --conf spark.hadoop.fs.s3a.path.style.access=true \

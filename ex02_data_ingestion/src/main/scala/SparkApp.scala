@@ -361,12 +361,12 @@ object SparkApp extends App {
   // Vérifications
   val qualityRatio = (perfect + good).toDouble / total
   println("\n  TESTS:")
-  println(s"  ✅ Dataset not empty: $total lines")
-  println(f"  ${if (qualityRatio >= 0.70) "✅" else "❌"} Quality >= 70%%: $qualityRatio%.1f%%")
+  println(s"   Dataset not empty: $total lines")
+  println(f"  ${if (qualityRatio >= 0.70) "" else ""} Quality >= 70%%: $qualityRatio%.1f%%")
 
   val duration = (System.currentTimeMillis() - startTime) / 60000.0
   println("\n" + "=" * 80)
-  println(f"  ✅ PIPELINE COMPLETED IN $duration%.2f MINUTES")
+  println(f"   PIPELINE COMPLETED IN $duration%.2f MINUTES")
   println("=" * 80)
 
   spark.stop()

@@ -47,7 +47,7 @@ object SparkApp extends App {
   val df : DataFrame = spark.read.parquet(localPath)
   df.write.mode("overwrite").parquet(outputPath)
 
-  Predef.println("[INFO] ✅ Parquet files uploaded to MinIO")
+  Predef.println("[INFO]  Parquet files uploaded to MinIO")
 
   // ==================================================================================
   // 2) UPLOAD REFERENCE CSV (SINGLE FILE UPLOAD)
@@ -83,18 +83,18 @@ object SparkApp extends App {
           outputStream.write(buffer, 0, bytesRead)
           bytesRead = inputStream.read(buffer)
         }
-        Predef.println("[INFO] ✅ taxi_zone_lookup.csv uploaded to MinIO")
+        Predef.println("[INFO]  taxi_zone_lookup.csv uploaded to MinIO")
       } finally {
         inputStream.close()
         outputStream.close()
       }
     } else {
-      Predef.println(s"[WARN] ⚠️  File not found: $csvLocalPath")
+      Predef.println(s"[WARN]   File not found: $csvLocalPath")
       Predef.println("[WARN] This is not critical for Ex01, but Ex02 will need this file.")
     }
   } catch {
     case e: Exception =>
-      Predef.println(s"[WARN] ⚠️  Could not upload taxi_zone_lookup.csv: ${e.getMessage}")
+      Predef.println(s"[WARN]   Could not upload taxi_zone_lookup.csv: ${e.getMessage}")
       Predef.println("[WARN] This is not critical for Ex01, but Ex02 will need this file.")
   }
 
