@@ -1,242 +1,233 @@
-# BigYellowData - NYC Yellow Taxi Data Warehouse
+# BigYellowData - NYC Yellow Taxi Data Pipeline
 
-Projet Big Data pour l'analyse des courses de taxis jaunes de New York City.
+A complete Big Data pipeline for NYC Yellow Taxi trip analysis, featuring data ingestion, ETL processing, Data Warehouse, ML prediction service, and workflow orchestration.
 
-## Architecture du Projet
+## Architecture
 
 ```
 BigYellowData/
-├── ex01_data_retrieval/     # Exercice 1 : Récupération des données
-├── ex02_data_ingestion/     # Exercice 2 : Ingestion dans MinIO (Data Lake)
-├── ex03_sql_table_creation/ # Exercice 3 : Création du Data Warehouse PostgreSQL
-├── ex04_dashboard/          # Exercice 4 : Dashboard Streamlit
-├── docker/                  # Configuration Spark
-├── docker-compose.yml       # Orchestration des services
-├── setup_and_run.sh         # Script principal d'exécution
-└── run_spark_docker.sh      # Script d'exécution Spark
+├── ex01_data_retrieval/        # Download NYC taxi data from TLC
+├── ex02_data_ingestion/        # Clean & transform with Spark, store in MinIO
+├── ex03_sql_table_creation/    # PostgreSQL Data Warehouse (Star Schema)
+├── ex04_dashboard/             # Streamlit Analytics Dashboard
+├── ex05_ml_prediction_service/ # ML Fare Prediction API
+├── ex06_airflow/               # Airflow DAGs for orchestration
+├── docker/                     # Spark Docker configuration
+├── docker-compose.yml          # All services orchestration
+├── setup_and_run.sh            # Main execution script
+└── run_spark_docker.sh         # Spark job runner
 ```
 
-## Prérequis
+## Tech Stack
 
-- **Docker** et **Docker Compose** installés
-- **Git** pour cloner le projet
-- Minimum **8 Go de RAM** disponibles
-- Ports libres : 5432, 5050, 7077, 8081, 8501, 9000, 9001
+| Component | Technology |
+|-----------|------------|
+| Data Processing | Apache Spark 3.5 (Scala) |
+| Data Lake | MinIO (S3-compatible) |
+| Data Warehouse | PostgreSQL 15 |
+| Dashboard | Streamlit + Plotly |
+| ML Service | scikit-learn + Streamlit |
+| Orchestration | Apache Airflow 2.x |
+| Containerization | Docker Compose |
 
-## Installation
+## Prerequisites
 
-### 1. Cloner le projet
+- **Docker** & **Docker Compose** installed
+- **Git** with LFS support
+- Minimum **8 GB RAM** available
+- Free ports: 5432, 5050, 7077, 8081, 8082, 8501, 8502, 9000, 9001
+
+## Quick Start
+
+### 1. Clone & Setup
 
 ```bash
-git clone <url-du-repo>
+git clone <repo-url>
 cd BigYellowData
-```
-
-### 2. Créer le fichier .env
-
-Le fichier `.env` contient les credentials MinIO. Créez-le à la racine du projet :
-
-```bash
-cat > .env << 'EOF'
-MINIO_ROOT_USER=minio
-MINIO_ROOT_PASSWORD=minio123
-MINIO_ENDPOINT=http://minio:9000
-EOF
-```
-
-> **Important** : Vous pouvez personnaliser les credentials, mais gardez les mêmes valeurs dans tout le projet.
-
-### 3. Rendre les scripts exécutables
-
-```bash
 chmod +x setup_and_run.sh run_spark_docker.sh
 ```
 
-## Lancement des Exercices
+### 2. Configure Environment
 
-### Option 1 : Tout exécuter d'un coup (recommandé pour la première fois)
+The `.env` file contains MinIO credentials (already configured):
+
+```bash
+MINIO_ROOT_USER=minio
+MINIO_ROOT_PASSWORD=minio123
+MINIO_ENDPOINT=http://minio:9000
+```
+
+### 3. Run the Complete Pipeline
 
 ```bash
 ./setup_and_run.sh all
 ```
 
-Cela va :
-1. Démarrer l'infrastructure Docker (Spark, MinIO, PostgreSQL, pgAdmin)
-2. Exécuter l'Exercice 1 (téléchargement des données)
-3. Exécuter l'Exercice 2 (ingestion dans MinIO)
-4. Exécuter l'Exercice 3 (création du Data Warehouse)
-5. Lancer le Dashboard (Exercice 4)
+This will:
+1. Start infrastructure (Spark, MinIO, PostgreSQL, pgAdmin)
+2. Execute Ex01: Download NYC taxi data
+3. Execute Ex02: Clean & ingest to MinIO
+4. Execute Ex03: Create Data Warehouse
+5. Launch Dashboard (Ex04)
 
-**Durée estimée** : 10-20 minutes selon la connexion internet et la puissance de la machine.
-
-### Option 2 : Exécuter un exercice spécifique
+## Running Individual Exercises
 
 ```bash
-# Exercice 1 : Récupération des données depuis NYC TLC
+# Ex01: Download taxi data from NYC TLC
 ./setup_and_run.sh ex01
 
-# Exercice 2 : Ingestion des données dans MinIO
+# Ex02: Clean and ingest to MinIO Data Lake
 ./setup_and_run.sh ex02
 
-# Exercice 3 : Création des tables dans PostgreSQL
+# Ex03: Create PostgreSQL Data Warehouse
 ./setup_and_run.sh ex03
 
-# Exercice 4 : Lancer le Dashboard Streamlit
+# Ex04: Launch Analytics Dashboard
 ./setup_and_run.sh ex04
+
+# Ex05: Train ML model
+./setup_and_run.sh ex05
+
+# Ex05-app: Launch ML Prediction Service
+./setup_and_run.sh ex05-app
+
+# Ex06: Start Airflow Orchestration
+./setup_and_run.sh ex06
 ```
 
-> **Note** : Les exercices doivent être exécutés dans l'ordre (ex01 -> ex02 -> ex03 -> ex04) car chaque exercice dépend du précédent.
+> **Note:** Exercises must run in order (ex01 -> ex02 -> ex03) as each depends on the previous.
 
-## Accès aux Services
-
-Une fois les services démarrés :
+## Service URLs
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| **Dashboard** | http://localhost:8501 | - |
-| **Spark Master UI** | http://localhost:8081 | - |
-| **MinIO Console** | http://localhost:9001 | Voir `.env` |
-| **pgAdmin** | http://localhost:5050 | admin@admin.com / admin |
+| Dashboard | http://localhost:8501 | - |
+| ML Prediction | http://localhost:8502 | - |
+| Airflow | http://localhost:8082 | admin / admin |
+| Spark Master | http://localhost:8081 | - |
+| MinIO Console | http://localhost:9001 | minio / minio123 |
+| pgAdmin | http://localhost:5050 | admin@admin.com / admin |
 
-### Configuration pgAdmin
+### pgAdmin PostgreSQL Connection
 
-Pour vous connecter à PostgreSQL depuis pgAdmin :
-- **Host** : `postgres-dw`
-- **Port** : `5432`
-- **Database** : `nyc_data_warehouse`
-- **User** : `user_dw`
-- **Password** : `password_dw`
+- **Host:** `postgres-dw`
+- **Port:** `5432`
+- **Database:** `nyc_data_warehouse`
+- **User:** `user_dw`
+- **Password:** `password_dw`
 
-## Description des Exercices
+## Data Warehouse Schema
 
-### Exercice 1 : Data Retrieval
-Télécharge les fichiers Parquet des courses de taxi depuis le site NYC TLC et les stocke localement.
+### Dimensions
+- `dim_date` - Calendar dimension
+- `dim_location` - NYC taxi zones (265 zones)
+- `dim_vendor` - Taxi companies
+- `dim_ratecode` - Fare rate codes
+- `dim_payment_type` - Payment methods
 
-### Exercice 2 : Data Ingestion
-- Lit les fichiers Parquet téléchargés
-- Nettoie et transforme les données
-- Détecte les outliers (courses anormales)
-- Stocke les données nettoyées dans MinIO (format Parquet)
+### Fact Tables
+- `fact_trip` - Individual trip details with outlier flags
+- `fact_vendor_daily` - Daily vendor aggregations
+- `fact_daily_pickup_zone` - Daily pickup zone stats
+- `fact_daily_dropoff_zone` - Daily dropoff zone stats
 
-### Exercice 3 : SQL Table Creation
-- Crée le schéma du Data Warehouse (modèle en étoile)
-- Charge les données depuis MinIO vers PostgreSQL
-- Crée les tables de faits et dimensions
-- Génère les tables agrégées
+## Airflow DAGs
 
-### Exercice 4 : Dashboard
-Dashboard interactif Streamlit avec :
-- Vue d'ensemble et KPIs
-- Analyse géographique
-- Analyse temporelle
-- Analyse des vendeurs et paiements
-- Distributions des courses
-- **Analyse détaillée des outliers** avec composition complète des prix
+### nyc_taxi_full_pipeline (Manual)
+Complete end-to-end pipeline:
+- Ex01: Data Retrieval
+- Ex02: Data Ingestion
+- Ex03: DWH Loading
+- Ex05: ML Training
 
-## Commandes Utiles
+### nyc_taxi_monthly_refresh (Scheduled)
+Automatic monthly data refresh:
+- Downloads new data from NYC TLC website
+- Processes through the full pipeline
+- Runs on 1st of each month at 2:00 AM
 
-### Voir les logs d'un service
+## Common Commands
 
 ```bash
+# View logs
 docker compose logs -f spark-master
 docker compose logs -f dashboard
-docker compose logs -f postgres-dw
-```
+docker compose logs -f airflow-scheduler
 
-### Arrêter tous les services
-
-```bash
+# Stop all services
 docker compose down
-```
 
-### Arrêter et supprimer les volumes (reset complet)
-
-```bash
+# Full reset (removes all data)
 docker compose down -v
-```
+rm -rf minio-data postgres-data
 
-### Reconstruire les images
-
-```bash
+# Rebuild images
 docker compose build --no-cache
-```
 
-### Vérifier l'état des services
-
-```bash
+# Check service status
 docker compose ps
 ```
 
-## Structure du Data Warehouse
+## Troubleshooting
 
-### Dimensions
-- `dim_date` : Calendrier
-- `dim_location` : Zones géographiques NYC
-- `dim_vendor` : Compagnies de taxi
-- `dim_ratecode` : Codes tarifaires
-- `dim_payment_type` : Types de paiement
-
-### Tables de Faits
-- `fact_trip` : Détail de chaque course
-- `fact_vendor_daily` : Agrégation par vendeur et jour
-- `fact_daily_pickup_zone` : Agrégation par zone de départ et jour
-- `fact_daily_dropoff_zone` : Agrégation par zone d'arrivée et jour
-
-## Dépannage
-
-### Erreur "port already in use"
+### Port already in use
 ```bash
-# Identifier le processus utilisant le port (ex: 5432)
 sudo lsof -i :5432
-# Ou arrêter tous les conteneurs Docker
 docker stop $(docker ps -aq)
 ```
 
-### Erreur de mémoire Spark
-Augmentez la mémoire allouée à Docker (Settings > Resources > Memory).
+### Spark memory errors
+Increase Docker memory allocation (Settings > Resources > Memory > 8GB+)
 
-### Le dashboard affiche "Database connection error"
-Assurez-vous que l'exercice 3 a été exécuté avec succès :
+### Dashboard shows "Database connection error"
+Ensure Ex03 completed successfully:
 ```bash
 ./setup_and_run.sh ex03
 ```
 
-### Réinitialiser complètement le projet
+### Airflow DAG not showing
+Check scheduler logs:
 ```bash
-docker compose down -v
-rm -rf minio-data postgres-data
-./setup_and_run.sh all
+docker logs airflow-scheduler --tail 100
 ```
+
+## Project Structure Details
+
+### Ex01 - Data Retrieval
+Downloads Parquet files from NYC TLC website for specified months.
+
+### Ex02 - Data Ingestion
+- Reads raw Parquet files
+- Cleans invalid records
+- Detects outliers (abnormal trips)
+- Calculates derived metrics (speed, duration)
+- Stores cleaned data in MinIO
+
+### Ex03 - SQL Table Creation
+- Creates star schema in PostgreSQL
+- Loads dimension tables
+- Ingests fact data from MinIO via Spark
+- Generates aggregation tables
+
+### Ex04 - Dashboard
+Interactive analytics with:
+- KPIs overview
+- Geographic analysis (pickup/dropoff zones)
+- Temporal patterns (hourly, daily)
+- Vendor & payment analysis
+- Trip distributions
+- Outlier analysis with full price breakdown
+
+### Ex05 - ML Prediction Service
+- Trains Random Forest model on trip data
+- Predicts fare amount based on trip features
+- Streamlit UI for predictions
+
+### Ex06 - Airflow Orchestration
+- Orchestrates complete pipeline
+- Scheduled monthly data refresh
+- Automatic new data detection
 
 ---
 
-## Référence : Code Spark avec MinIO
-
-```scala
-import org.apache.spark.sql.{SparkSession, DataFrame}
-
-object SparkApp extends App {
-  val spark = SparkSession.builder()
-    .appName("SparkApp")
-    .master("local")
-    .config("fs.s3a.access.key", "minio")
-    .config("fs.s3a.secret.key", "minio123")
-    .config("fs.s3a.endpoint", "http://localhost:9000/")
-    .config("fs.s3a.path.style.access", "true")
-    .config("fs.s3a.connection.ssl.enable", "false")
-    .config("fs.s3a.attempts.maximum", "1")
-    .config("fs.s3a.connection.establish.timeout", "6000")
-    .config("fs.s3a.connection.timeout", "5000")
-    .getOrCreate()
-  spark.sparkContext.setLogLevel("WARN")
-}
-```
-
----
-
-## Modalités de rendu
-
-1. Pull Request vers la branch `master`
-2. Dépôt du rapport et du code source zippé dans cours.cyu.fr
-
-**Date limite de rendu : 7 février 2026**
+**BigYellowData Team** | CY Tech 2025-2026

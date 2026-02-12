@@ -6,26 +6,11 @@ from plotly.subplots import make_subplots
 from sqlalchemy import create_engine
 from datetime import datetime
 
-"""
-Exercise 4: Data Visualization & Dashboarding.
-
-This Streamlit application serves as the frontend analytics layer for the NYC Taxi Data Project.
-It connects directly to the Data Warehouse (PostgreSQL) to provide interactive visualizations,
-KPI tracking, and deep-dive analysis into traffic patterns, revenue, and data quality (outliers).
-
-Key Features:
-- Real-time connection to the Fact/Dimension tables.
-- Interactive geographic and temporal analysis using Plotly.
-- Dedicated module for outlier detection and quality assessment.
-
-@author BigYellowData Team
-@version 1.0
-"""
 # =============================================================================
-# Configuration
+# Configuration (MUST be first Streamlit command)
 # =============================================================================
 st.set_page_config(
-    page_title="Dashboard Taxi NYC",
+    page_title="NYC Taxi Dashboard",
     page_icon="🚕",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -446,31 +431,31 @@ def load_extreme_values():
     engine = get_db_connection()
     query = """
     SELECT
-        'Distance max' as metric,
+        'Max Distance' as metric,
         MAX(trip_distance) as value,
         'km' as unit
     FROM dw.fact_trip WHERE is_outlier
     UNION ALL
     SELECT
-        'Durée max',
+        'Max Duration',
         MAX(trip_duration_minutes),
         'min'
     FROM dw.fact_trip WHERE is_outlier
     UNION ALL
     SELECT
-        'Tarif max',
+        'Max Fare',
         MAX(total_amount),
         '$'
     FROM dw.fact_trip WHERE is_outlier
     UNION ALL
     SELECT
-        'Vitesse max',
+        'Max Speed',
         MAX(avg_speed_mph),
         'km/h'
     FROM dw.fact_trip WHERE is_outlier
     UNION ALL
     SELECT
-        'Tarif min (négatif)',
+        'Min Fare (negative)',
         MIN(total_amount),
         '$'
     FROM dw.fact_trip WHERE is_outlier AND total_amount < 0
@@ -516,21 +501,9 @@ def load_passenger_stats():
     return pd.read_sql(query, engine)
 
 # =============================================================================
-# WEEKDAY TRANSLATION
+# WEEKDAY NAMES (kept for potential future localization)
 # =============================================================================
-DAY_TRANSLATION = {
-    'Monday': 'Lundi',
-    'Tuesday': 'Mardi',
-    'Wednesday': 'Mercredi',
-    'Thursday': 'Jeudi',
-    'Friday': 'Vendredi',
-    'Saturday': 'Samedi',
-    'Sunday': 'Dimanche'
-}
-
-def translate_day(day_name):
-    """Translate in french the name of days"""
-    return DAY_TRANSLATION.get(day_name.strip(), day_name)
+DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 # =============================================================================
 # Dashboard Layout Functions
@@ -747,18 +720,6 @@ def render_vendors_tab():
         payment_data = load_payment_stats()
         # Traduire les types de paiement
         """
-        payment_translation = {
-            'Credit card': 'Carte de crédit',
-            'Cash': 'Espèces',
-            'No charge': 'Gratuit',
-            'Dispute': 'Litige',
-            'Unknown': 'Inconnu',
-            'Voided trip': 'Course annulée',
-            'Flex Fare trip': 'Tarif flexible'
-        }
-        payment_data['type_paiement'] = payment_data['payment_type'].map(
-            lambda x: payment_translation.get(x, x)
-        )
         """
         fig_payment = px.pie(
             payment_data, values='trips', names='payment_type',
@@ -783,19 +744,6 @@ def render_vendors_tab():
     st.subheader("Rate Code Analysis")
     ratecode_data = load_ratecode_stats()
     """
-    # Traduire les codes tarifaires
-    ratecode_translation = {
-        'Standard rate': 'Tarif standard',
-        'JFK': 'JFK (Aéroport)',
-        'Newark': 'Newark (Aéroport)',
-        'Nassau or Westchester': 'Nassau/Westchester',
-        'Negotiated fare': 'Tarif négocié',
-        'Group ride': 'Course groupée',
-        'Unknown': 'Inconnu'
-    }
-    ratecode_data['code_tarif'] = ratecode_data['ratecode'].map(
-        lambda x: ratecode_translation.get(x, x)
-    )
     """
     fig_ratecode = px.bar(
         ratecode_data, x='ratecode', y='trips',
@@ -897,7 +845,7 @@ def render_outliers_tab():
             st.metric(
                 "Number of Outliers",
                 f"{outlier_row['trips']:,.0f}",
-                f"{outlier_row['trips']/(outlier_row['trips']+normal_row['trips'])*100:.1f}% du total"
+                f"{outlier_row['trips']/(outlier_row['trips']+normal_row['trips'])*100:.1f}% of total"
             )
         with col2:
             st.metric(
@@ -1026,16 +974,16 @@ def render_outliers_tab():
     if not samples.empty:
         # Price Composition Info
         st.markdown("""
-        **Composition du prix total :**
-        - **Base Fare** : Trip cost (distance + time)
-        - **Extra** : Surcharges (night, rush hour)
-        - **MTA Tax** : MTA Tax (0.50$)
-        - **Tip** : Customer tip
-        - **Tolls** : Tolls amount
-        - **Improvement Surcharge** : Improvement surcharge (0.30$)
-        - **Congestion Surcharge** : Congestion surcharge in Manhattan zone
-        - **Airport Fee** : Airport fee supplement
-        - **CBD Congestion Fee** : New CBD congestion fee
+        **Total Price Breakdown:**
+        - **Base Fare**: Trip cost (distance + time)
+        - **Extra**: Surcharges (night, rush hour)
+        - **MTA Tax**: MTA Tax ($0.50)
+        - **Tip**: Customer tip
+        - **Tolls**: Tolls amount
+        - **Improvement Surcharge**: Improvement surcharge ($0.30)
+        - **Congestion Surcharge**: Congestion surcharge in Manhattan zone
+        - **Airport Fee**: Airport fee supplement
+        - **CBD Congestion Fee**: New CBD congestion fee
         """)
 
         # Display Full Details
@@ -1045,15 +993,15 @@ def render_outliers_tab():
         samples_display = samples.copy()
 
         # General Info Columns
-        samples_display['Heure Départ'] = samples_display['tpep_pickup_datetime'].dt.strftime('%Y-%m-%d %H:%M')
-        samples_display['Heure Arrivée'] = samples_display['tpep_dropoff_datetime'].dt.strftime('%Y-%m-%d %H:%M')
+        samples_display['Pickup Time'] = samples_display['tpep_pickup_datetime'].dt.strftime('%Y-%m-%d %H:%M')
+        samples_display['Dropoff Time'] = samples_display['tpep_dropoff_datetime'].dt.strftime('%Y-%m-%d %H:%M')
         samples_display['Distance (km)'] = samples_display['trip_distance'].apply(lambda x: f"{x*1.6:.2f}" if pd.notna(x) else "N/A")
-        samples_display['Durée (min)'] = samples_display['trip_duration_minutes'].apply(lambda x: f"{x:.1f}" if pd.notna(x) else "N/A")
-        samples_display['Vitesse (km/h)'] = samples_display['avg_speed_mph'].apply(lambda x: f"{x*1.6:.1f}" if pd.notna(x) else "N/A")
-        samples_display['Passagers'] = samples_display['passenger_count']
+        samples_display['Duration (min)'] = samples_display['trip_duration_minutes'].apply(lambda x: f"{x:.1f}" if pd.notna(x) else "N/A")
+        samples_display['Speed (km/h)'] = samples_display['avg_speed_mph'].apply(lambda x: f"{x*1.6:.1f}" if pd.notna(x) else "N/A")
+        samples_display['Passengers'] = samples_display['passenger_count']
 
         # Price Columns - Formatted in Dollars
-        samples_display['Tarif Base'] = samples_display['fare_amount'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
+        samples_display['Base Fare'] = samples_display['fare_amount'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
         samples_display['Extra'] = samples_display['extra'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
         samples_display['MTA Tax'] = samples_display['mta_tax'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
         samples_display['Tip'] = samples_display['tip_amount'].apply(lambda x: f"{x:.2f}$" if pd.notna(x) else "0.00$")
@@ -1129,7 +1077,7 @@ def main():
     # Load Date Range
     try:
         date_range = load_date_range()
-        st.caption(f"Data Period: {date_range['min_date']} au {date_range['max_date']}")
+        st.caption(f"Data Period: {date_range['min_date']} to {date_range['max_date']}")
     except Exception as e:
         st.error(f"Database Connection Error: {e}")
         st.info("Ensure PostgreSQL is running and Ex03 has been executed")

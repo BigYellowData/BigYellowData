@@ -9,7 +9,9 @@ from sklearn.model_selection import train_test_split
 
 # MinIO connection - reads from environment variables (set by docker-compose)
 # Falls back to defaults matching the project's .env file
+# When running locally (not in Docker), replace 'minio' hostname with 'localhost'
 _raw_endpoint = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
+_raw_endpoint = _raw_endpoint.replace("minio:", "localhost:")  # Fix for local execution
 MINIO_ENDPOINT = _raw_endpoint.replace("http://", "").replace("https://", "")
 ACCESS_KEY = os.getenv("MINIO_ROOT_USER", "minio")
 SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD", "minio123")
